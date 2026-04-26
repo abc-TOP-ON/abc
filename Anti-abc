@@ -1,0 +1,153 @@
+-- Zoins Hub - ABC Script (Color Toggle Update)
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+
+if CoreGui:FindFirstChild("ABC_Protection") then
+    CoreGui.ABC_Protection:Destroy()
+end
+
+local gui = Instance.new("ScreenGui", CoreGui)
+gui.Name = "ABC_Protection"
+
+_G.UltraProtectRunning = false
+local hooksApplied = false
+
+---------------------------------------
+-- وظائف الحماية (Hooks)
+---------------------------------------
+local function applyHooks()
+    if hooksApplied then return end
+    hooksApplied = true
+    
+    local blocked = {"logs", "clogs", "re", "nv", "uncmdbar2", "mute", "res", "kill", "fling", "fly", "giant", "size"}
+    
+    for _, f in pairs(getgc(true)) do
+        if typeof(f) == "function" and islclosure(f) and not isexecutorclosure(f) then
+            local env = getfenv(f)
+            if env and env.script then
+                local name = tostring(env.script):lower()
+                for _, word in pairs(blocked) do
+                    if name:find(word) then
+                        local old; old = hookfunction(f, function(...)
+                            if _G.UltraProtectRunning then 
+                                return nil 
+                            end
+                            return old(...)
+                        end)
+                        break
+                    end
+                end
+            end
+        end
+    end
+end
+
+---------------------------------------
+-- واجهة القائمة الرئيسية
+---------------------------------------
+local mainFrame = Instance.new("Frame", gui)
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 300, 0, 160)
+mainFrame.Position = UDim2.new(0.5, -150, 0.5, -80)
+mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+mainFrame.BackgroundTransparency = 0.5
+mainFrame.Active = true
+mainFrame.Draggable = true
+
+local mainCorner = Instance.new("UICorner", mainFrame)
+local mainStroke = Instance.new("UIStroke", mainFrame)
+mainStroke.Color = Color3.fromRGB(0, 120, 255)
+mainStroke.Thickness = 2
+
+-- اسم السكربت ABC
+local title = Instance.new("TextLabel", mainFrame)
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Text = "ABC"
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(0, 120, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+
+-- زر الإغلاق X
+local closeBtn = Instance.new("TextButton", mainFrame)
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -35, 0, 5)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 22
+
+-- زر التشغيل والإطفاء (الزر الملون)
+local toggleBtn = Instance.new("TextButton", mainFrame)
+toggleBtn.Size = UDim2.new(0.8, 0, 0, 45)
+toggleBtn.Position = UDim2.new(0.1, 0, 0, 55)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50) -- يبدأ باللون الأحمر
+toggleBtn.BackgroundTransparency = 0.2
+toggleBtn.Text = "تشغيل الحماية"
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 14
+Instance.new("UICorner", toggleBtn)
+
+-- نص الحالة
+local statusLabel = Instance.new("TextLabel", mainFrame)
+statusLabel.Size = UDim2.new(1, 0, 0, 30)
+statusLabel.Position = UDim2.new(0, 0, 0, 110)
+statusLabel.Text = "الحالة: مطفية ❌"
+statusLabel.BackgroundTransparency = 1
+statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+statusLabel.Font = Enum.Font.GothamMedium
+statusLabel.TextSize = 15
+
+---------------------------------------
+-- دائرة الاختصار (ABC Circle)
+---------------------------------------
+local openCircle = Instance.new("TextButton", gui)
+openCircle.Size = UDim2.new(0, 55, 0, 55)
+openCircle.Position = UDim2.new(0.05, 0, 0.4, 0)
+openCircle.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+openCircle.BackgroundTransparency = 0.5
+openCircle.Text = "ABC"
+openCircle.TextColor3 = Color3.fromRGB(0, 120, 255)
+openCircle.Font = Enum.Font.GothamBold
+openCircle.TextSize = 16
+openCircle.Visible = false
+openCircle.Draggable = true
+Instance.new("UICorner", openCircle).CornerRadius = UDim.new(1, 0)
+local circleStroke = Instance.new("UIStroke", openCircle)
+circleStroke.Color = Color3.fromRGB(0, 120, 255)
+circleStroke.Thickness = 2
+
+---------------------------------------
+-- الربط البرمجي وتغيير الألوان
+---------------------------------------
+
+toggleBtn.MouseButton1Click:Connect(function()
+    if _G.UltraProtectRunning then
+        _G.UltraProtectRunning = false
+        -- تغيير الشكل للحالة المطفية (أحمر)
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        toggleBtn.Text = "تشغيل الحماية"
+        statusLabel.Text = "الحالة: مطفية ❌"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+    else
+        _G.UltraProtectRunning = true
+        applyHooks()
+        -- تغيير الشكل للحالة المشغلة (أخضر)
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
+        toggleBtn.Text = "إيقاف الحماية"
+        statusLabel.Text = "الحالة: مشغلة ✅"
+        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+    end
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    openCircle.Visible = true
+end)
+
+openCircle.MouseButton1Click:Connect(function()
+    mainFrame.Visible = true
+    openCircle.Visible = false
+end)
