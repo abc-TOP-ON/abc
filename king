@@ -1,5 +1,4 @@
-do
-	local genv = getgenv and getgenv() or nil
+local genv = getgenv and getgenv() or nil
 	if not (genv and genv["LPH_NO_VIRTUALIZE"]) and not _G["LPH_NO_VIRTUALIZE"] then
 		loadstring([[ function LPH_NO_VIRTUALIZE(f) return f end ]])()
 	end
