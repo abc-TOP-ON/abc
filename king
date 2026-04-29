@@ -1,1786 +1,832 @@
-local genv = getgenv and getgenv() or nil
-	if not (genv and genv["LPH_NO_VIRTUALIZE"]) and not _G["LPH_NO_VIRTUALIZE"] then
-		loadstring([[ function LPH_NO_VIRTUALIZE(f) return f end ]])()
-	end
-end
-local function PP_SCRAMBLE_STR(v) return v end
-local function PP_SCRAMBLE_NUM(v) return v end
-local function PP_SCRAMBLE_RE_NUM(v) return v end
-_G.PP_SCRAMBLE_STR = _G.PP_SCRAMBLE_STR or PP_SCRAMBLE_STR
-_G.PP_SCRAMBLE_NUM = _G.PP_SCRAMBLE_NUM or PP_SCRAMBLE_NUM
-_G.PP_SCRAMBLE_RE_NUM = _G.PP_SCRAMBLE_RE_NUM or PP_SCRAMBLE_RE_NUM
-shared = shared or {}
-shared.Lycoris = shared.Lycoris or { silent = false }
-local NO_HITBOX_ONLY = true
-local NO_HITBOX_REACTION_BIAS_SECONDS = -0.045
-local NO_HITBOX_SKILL_POLL_SECONDS = 0.015
-local NO_HITBOX_PART_POLL_SECONDS = 0.03
-local NO_HITBOX_MIN_BLOCK_SECONDS = 0.35
-local NO_HITBOX_ACTIVE_GUARD_PULSE_SECONDS = 0.18
-local activeSkillDef = nil
-local executeDefensiveAction = function(_, _, actionFn)
-	if type(actionFn) == "function" then
-		return actionFn()
-	end
-	return nil
-end
+loadstring(game:HttpGet("https://raw.githubusercontent.com/blackowl1231/Z3US/refs/heads/main/Games/other.lua"))()
+local z3USLoader = Instance.new("ScreenGui")
+z3USLoader.Name = "Z3US Loader"
+z3USLoader.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+z3USLoader.Parent = game:GetService("CoreGui")
+z3USLoader.ResetOnSpawn = false
+z3USLoader.DisplayOrder = 999999
+z3USLoader.IgnoreGuiInset = true
 
-local handleAutoCounterTiming = function() end
+local frame = Instance.new("Frame")
+frame.Name = "Frame"
+frame.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+frame.BorderSizePixel = 0
+frame.Position = UDim2.fromScale(0.0883, 0.11)
+frame.Size = UDim2.fromOffset(878, 550)
 
-local Modules = {}
-local function defineModule(name, factory)
-    Modules[name] = factory
-end
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		local dragStart = input.Position
+		local frameStart = frame.Position
 
-local function require(name)
-    local module = Modules[name]
-    if module == nil then
-        error('Missing module: ' .. tostring(name))
-    end
-    if type(module) == 'function' then
-        local result = module()
-        Modules[name] = result
-        return result
-    end
-    return module
-end
-
-
--- MODULE: Features/Combat/AttributeListener
-
-defineModule("Features/Combat/AttributeListener", function()
--- AttributeListener module.
-local AttributeListener = {}
-
----@modules Utility.Maid
-local Maid = require("Utility/Maid")
-
----@module Utility.Signal
-local Signal = require("Utility/Signal")
-
--- Services.
-local players = game:GetService("Players")
-local function soundPredictionSeconds()
-	return 0.15 + Defender.rdelay()
-end
-
--- Attribute maid.
-local attributeMaid = Maid.new()
-
----On character added.
----@param character Model
-local function onCharacterAdded(character)
-end
-
----On character removing.
----@param character Model
-local function onCharacterRemoving(character)
-end
-
----Is block currently held? (FHeld)
----@return boolean
-function AttributeListener.fheld()
-	local localPlayer = players.LocalPlayer
-	local character = localPlayer and localPlayer.Character
-	if not character then
-		return false
-	end
-
-	local fheld = character:FindFirstChild("FHeld")
-	if not fheld or not fheld:IsA("BoolValue") then
-		local live = workspace:FindFirstChild("Live")
-		local liveChar = live and localPlayer and live:FindFirstChild(localPlayer.Name)
-		fheld = liveChar and liveChar:FindFirstChild("FHeld")
-		if not fheld or not fheld:IsA("BoolValue") then
-			return false
-		end
-	end
-
-	return fheld.Value == true
-end
-
----Initialize AttributeListener module.
-function AttributeListener.init()
-	local localPlayer = players.LocalPlayer
-	local characterAddedSignal = Signal.new(localPlayer.CharacterAdded)
-	local characterRemovingSignal = Signal.new(localPlayer.CharacterRemoving)
-
-	attributeMaid:add(characterAddedSignal:connect("AttributeListener_OnCharacterAdded", function(character)
-		onCharacterAdded(character)
-	end))
-
-	attributeMaid:add(characterRemovingSignal:connect("AttributeListener_OnCharacterRemoving", function(character)
-		onCharacterRemoving(character)
-	end))
-
-	if localPlayer.Character then
-		onCharacterAdded(localPlayer.Character)
-	end
-end
-
----Detach AttributeListener module.
-function AttributeListener.detach()
-	attributeMaid:clean()
-end
-
--- Return AttributeListener module.
-return AttributeListener
-
-end)
-
-
--- MODULE: Features/Combat/Defense
-
-defineModule("Features/Combat/Defense", function()
-
----@module Utility.Signal
-local Signal = require('Utility/Signal')
-
----@module Utility.Maid
-local Maid = require('Utility/Maid')
-
----@module Features.Combat.Objects.AnimatorDefender
-local AnimatorDefender = require('Features/Combat/Objects/AnimatorDefender')
-
----@module Features.Combat.Objects.SoundDefender
-local SoundDefender = require('Features/Combat/Objects/SoundDefender')
-
----@module Features.Combat.Objects.PartDefender
-local PartDefender = require('Features/Combat/Objects/PartDefender')
-
----@module Features.Combat.PositionHistory
-local PositionHistory = require('Features/Combat/PositionHistory')
-
----@module Utility.Logger
-local Logger = require('Utility/Logger')
-
----@module Utility.TaskSpawner
-local TaskSpawner = require('Utility/TaskSpawner')
-
-local Defense = {}
-
-local players = game:GetService('Players')
-local runService = game:GetService('RunService')
-local workspaceService = game:GetService('Workspace')
-
-local defenseMaid = Maid.new()
-local liveMaid = Maid.new()
-local defenderObjects = {}
-local defenderAnimationObjects = {}
-local defenderSoundObjects = {}
-local defenderPartObjects = {}
-local lastHistoryUpdate = os.clock()
-
-local addAnimatorDefender = LPH_NO_VIRTUALIZE(function(animator)
-    local animationDefender = AnimatorDefender.new(animator)
-    defenderObjects[animator] = animationDefender
-    defenderAnimationObjects[animator] = animationDefender
-end)
-
-local addSoundDefender = LPH_NO_VIRTUALIZE(function(sound)
-    local part = sound:FindFirstAncestorWhichIsA('BasePart')
-    if not part then
-        return
-    end
-
-    local soundDefender = SoundDefender.new(sound, part)
-    defenderObjects[sound] = soundDefender
-    defenderSoundObjects[sound] = soundDefender
-end)
-
-local addPartDefender = LPH_NO_VIRTUALIZE(function(part)
-    local partDefender = PartDefender.new(part)
-    if not partDefender then
-        return
-    end
-
-    defenderObjects[part] = partDefender
-    defenderPartObjects[part] = partDefender
-end)
-
-local onLiveDescendantAdded = LPH_NO_VIRTUALIZE(function(descendant)
-    if descendant:IsA('Animator') then
-        return addAnimatorDefender(descendant)
-    end
-
-    if descendant:IsA('Sound') then
-        return addSoundDefender(descendant)
-    end
-end)
-
-local function isStandModel(model)
-	if not model or not model:IsA("Model") then
-		return false
-	end
-	local stands = workspaceService:FindFirstChild("Stands")
-	if stands and model:IsDescendantOf(stands) then
-		return true
-	end
-	local live = workspaceService:FindFirstChild("Live")
-	if not live then
-		return false
-	end
-	for _, entity in next, live:GetChildren() do
-		local standValue = entity:FindFirstChild("STANDOBJ")
-		if standValue and standValue.Value and standValue.Value:IsA("Model") then
-			if model == standValue.Value or model:IsDescendantOf(standValue.Value) then
-				return true
+		local connection
+		connection = game:GetService("UserInputService").InputChanged:Connect(function(inputChanged)
+			if inputChanged.UserInputType == Enum.UserInputType.MouseMovement then
+				local delta = inputChanged.Position - dragStart
+				frame.Position = UDim2.new(
+					frameStart.X.Scale,
+					frameStart.X.Offset + delta.X,
+					frameStart.Y.Scale,
+					frameStart.Y.Offset + delta.Y
+				)
 			end
-		end
-	end
-	return false
-end
-
-local onWorldDescendantAdded = LPH_NO_VIRTUALIZE(function(descendant)
-	if descendant:IsA('Animator') then
-		local model = descendant:FindFirstAncestorWhichIsA("Model")
-		if isStandModel(model) then
-			return addAnimatorDefender(descendant)
-		end
-		return
-	end
-	if descendant:IsA("AnimationController") then
-		local model = descendant:FindFirstAncestorWhichIsA("Model")
-		if isStandModel(model) then
-			local animator = descendant:FindFirstChildOfClass("Animator")
-			if not animator then
-				animator = Instance.new("Animator")
-				animator.Parent = descendant
-			end
-			return addAnimatorDefender(animator)
-		end
-		return
-	end
-	if descendant:IsA("Model") and isStandModel(descendant) then
-		for _, child in next, descendant:GetDescendants() do
-			if child:IsA("Animator") then
-				addAnimatorDefender(child)
-			elseif child:IsA("AnimationController") then
-				local animator = child:FindFirstChildOfClass("Animator")
-				if not animator then
-					animator = Instance.new("Animator")
-					animator.Parent = child
-				end
-				addAnimatorDefender(animator)
-			end
-		end
-		return
-	end
-    if descendant:IsA('BasePart') then
-        return addPartDefender(descendant)
-    end
-end)
-
-local onLiveDescendantRemoved = LPH_NO_VIRTUALIZE(function(descendant)
-    local object = defenderObjects[descendant]
-    if not object then
-        return
-    end
-
-    object:detach()
-    defenderObjects[descendant] = nil
-    defenderAnimationObjects[descendant] = nil
-    defenderSoundObjects[descendant] = nil
-    defenderPartObjects[descendant] = nil
-end)
-
-local liveInstance = nil
-local function clearLiveState()
-    for _, object in next, defenderObjects do
-        object:detach()
-    end
-
-    defenderObjects = {}
-    defenderAnimationObjects = {}
-    defenderSoundObjects = {}
-    defenderPartObjects = {}
-end
-
-local function attachLive(live)
-    if liveInstance == live then
-        return
-    end
-
-    liveInstance = live
-    liveMaid:clean()
-    clearLiveState()
-
-    if not live then
-        return
-    end
-
-    liveMaid:mark(live.DescendantAdded:Connect(onLiveDescendantAdded))
-    liveMaid:mark(live.DescendantRemoving:Connect(onLiveDescendantRemoved))
-
-    for _, descendant in next, live:GetDescendants() do
-        onLiveDescendantAdded(descendant)
-    end
-end
-
-local updateHistory = LPH_NO_VIRTUALIZE(function()
-    lastHistoryUpdate = os.clock()
-
-    local character = players.LocalPlayer and players.LocalPlayer.Character
-    if not character then
-        return
-    end
-
-    local humanoidRootPart = character:FindFirstChild('HumanoidRootPart')
-    if not humanoidRootPart then
-        return
-    end
-
-    PositionHistory.add(players.LocalPlayer, humanoidRootPart.CFrame, tick())
-
-    for _, player in next, players:GetPlayers() do
-        if player == players.LocalPlayer then
-            continue
-        end
-
-        local pcharacter = player.Character
-        if not pcharacter then
-            continue
-        end
-
-        local proot = pcharacter:FindFirstChild('HumanoidRootPart')
-        if not proot then
-            continue
-        end
-
-        PositionHistory.add(pcharacter, proot.CFrame, tick())
-    end
-end)
-
-local updateDefenders = LPH_NO_VIRTUALIZE(function()
-    for _, object in next, defenderAnimationObjects do
-        if object and object.update then
-            object:update()
-        end
-    end
-
-    for _, object in next, defenderPartObjects do
-        if object and object.update then
-            object:update()
-        end
-    end
-end)
-
-function Defense.init()
-    local renderStepped = Signal.new(runService.RenderStepped)
-    local postSimulation = Signal.new(runService.PostSimulation)
-
-    defenseMaid:mark(renderStepped:connect('Defense_UpdateHistory', updateHistory))
-    defenseMaid:mark(postSimulation:connect('Defense_UpdateDefenders', updateDefenders))
-    defenseMaid:mark(workspaceService.DescendantAdded:Connect(onWorldDescendantAdded))
-    defenseMaid:mark(workspaceService.DescendantRemoving:Connect(onLiveDescendantRemoved))
-
-    defenseMaid:mark(workspaceService.ChildAdded:Connect(function(child)
-        if child.Name == "Live" then
-            attachLive(child)
-        end
-    end))
-    defenseMaid:mark(workspaceService.ChildRemoved:Connect(function(child)
-        if child == liveInstance then
-            attachLive(nil)
-        end
-    end))
-    attachLive(workspaceService:FindFirstChild("Live"))
-    for _, descendant in next, workspaceService:GetDescendants() do
-        onWorldDescendantAdded(descendant)
-    end
-
-    Logger.warn('Defense initialized (animation + sound).')
-end
-
-function Defense.detach()
-    liveMaid:clean()
-    clearLiveState()
-    defenseMaid:clean()
-    liveInstance = nil
-
-    Logger.warn('Defense detached.')
-end
-
-function Defense.blocking()
-    for _, object in next, defenderAnimationObjects do
-        if object and object.blocking and object:blocking() then
-            return true
-        end
-    end
-    return false
-end
-
-return Defense
-
-end)
-
-
--- MODULE: Features/Combat/Objects/AnimatorDefender
-
-defineModule("Features/Combat/Objects/AnimatorDefender", function()
----@module Features.Combat.Objects.Defender
-local Defender = require("Features/Combat/Objects/Defender")
-
----@module Utility.Signal
-local Signal = require("Utility/Signal")
-
----@module Game.Timings.SaveManager
-local SaveManager = require("Game/Timings/SaveManager")
-
----@module Utility.Logger
-local Logger = require("Utility/Logger")
-
----@module Game.InputClient
-local InputClient = require("Game/InputClient")
-
----@module Utility.Configuration
-local Configuration = require("Utility/Configuration")
-
----@module Game.Timings.PlaybackData
-local PlaybackData = require("Game/Timings/PlaybackData")
-local M1AutoTrade = require("Features/Combat/M1AutoTrade")
-
----@module GUI.Library
-local Library = require("GUI/Library")
-
-local workspaceService = game:GetService("Workspace")
-
-local function isBlacklistedM1(aid)
-	if not Library or not Library.InfoLoggerData or not Library.InfoLoggerData.KeyBlacklistList then
-		return false
-	end
-	return Library.InfoLoggerData.KeyBlacklistList[aid] == true
-end
-_G.isBlacklistedM1 = isBlacklistedM1
-
-local function isStandModel(model)
-	if not model or not model:IsA("Model") then
-		return false
-	end
-	local stands = workspaceService:FindFirstChild("Stands")
-	if stands and model:IsDescendantOf(stands) then
-		return true
-	end
-	local live = workspaceService:FindFirstChild("Live")
-	if not live then
-		return false
-	end
-	for _, entity in next, live:GetChildren() do
-		local standValue = entity:FindFirstChild("STANDOBJ")
-		if standValue and standValue.Value and standValue.Value:IsA("Model") then
-			if model == standValue.Value or model:IsDescendantOf(standValue.Value) then
-				return true
-			end
-		end
-	end
-	return false
-end
-
----@module Utility.Maid
-local Maid = require("Utility/Maid")
-
----@module Features.Combat.Objects.RepeatInfo
-local RepeatInfo = require("Features/Combat/Objects/RepeatInfo")
-
----@module Features.Combat.Objects.HitboxOptions
-local HitboxOptions = require("Features/Combat/Objects/HitboxOptions")
-
----@module Utility.Configuration
-local Configuration = require("Utility/Configuration")
-
----@module Game.Timings.PartTiming
-local PartTiming = require("Game/Timings/PartTiming")
-
----@module Game.Timings.Action
-local Action = require("Game/Timings/Action")
-
----@module Features.Combat.Objects.Task
-local Task = require("Features/Combat/Objects/Task")
-
----@module Utility.TaskSpawner
-local TaskSpawner = require("Utility/TaskSpawner")
-
----@module Features.Combat.PositionHistory
-local PositionHistory = require("Features/Combat/PositionHistory")
-
----@module Utility.OriginalStore
-local OriginalStore = require("Utility/OriginalStore")
-
-local runService = game:GetService("RunService")
-
-local hcCache = {}
-local hcCacheFrame = 0
-runService.RenderStepped:Connect(LPH_NO_VIRTUALIZE(function()
-	hcCacheFrame = hcCacheFrame + 1
-	hcCache = {}
-end))
-
-local function hcKey(prefix, options, position, hitbox, shape, timing, action)
-	local ent = options.entity or options.part or options.cframe or ""
-	local filter = options.filter or ""
-	local timingId = timing and (timing._id or timing.name) or ""
-	local actionId = action and (action._type or action.name) or ""
-	local actionWhen = action and action._when or ""
-	local pos = position or Vector3.zero
-	local ptime = options.ptime or 0
-	local spredict = options.spredict and 1 or 0
-	local fhb = timing and timing.fhb or false
-	local duih = timing and timing.duih or false
-	return string.format(
-		"%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%.4f|%.2f,%.2f,%.2f|%.2f,%.2f,%.2f",
-		prefix or "base",
-		tostring(ent),
-		tostring(filter),
-		tostring(shape),
-		tostring(timingId),
-		tostring(actionId),
-		tostring(actionWhen),
-		tostring(spredict),
-		tostring(fhb),
-		tostring(duih),
-		ptime,
-		hitbox.X, hitbox.Y, hitbox.Z,
-		pos.X, pos.Y, pos.Z
-	)
-end
-
----@module Features.Combat.AttributeListener
-local AttributeListener = require("Features/Combat/AttributeListener")
-
----@class AnimatorDefender: Defender
----@field animator Animator
----@field entity Model
----@field kfmaid Maid
----@field heffects Instance[]
----@field keyframes Action[]
----@field offset number?
----@field timing AnimationTiming?
----@field pbdata table<AnimationTrack, PlaybackData> Playback data to be recorded.
----@field rpbdata table<string, PlaybackData> Recorded playback data. Optimization so we don't have to constantly reiterate over recorded data.
----@field manimations table<number, Animation>
----@field track AnimationTrack? Don't be confused. This is the **valid && last** animation track played.
----@field maid Maid This maid is cleaned up after every new animation track. Safe to use for on-animation-track setup.
-local AnimatorDefender = setmetatable({}, { __index = Defender })
-AnimatorDefender.__index = AnimatorDefender
-AnimatorDefender.__type = "Animation"
-
--- Services.
-local players = game:GetService("Players")
-
--- Constants.
-local MAX_REPEAT_TIME = 5.0
-local HISTORY_STEPS = 5.0
-local PREDICT_FACING_DELTA = 0.3
-
----Is animation stopped? Made into a function for de-duplication.
----@param self AnimatorDefender
----@param track AnimationTrack
----@param timing AnimationTiming
----@return boolean
-AnimatorDefender.stopped = LPH_NO_VIRTUALIZE(function(self, track, timing)
-	if
-		not NO_HITBOX_ONLY
-		and Configuration.expectToggleValue("AllowFailure")
-		and not timing.rpue
-		and Random.new():NextNumber(1.0, 100.0) <= (Configuration.expectOptionValue("IgnoreAnimationEndRate") or 0.0)
-	then
-		return false, self:notify(timing, "Intentionally ignoring animation end to simulate human error.")
-	end
-
-	if not timing.iae and not track.IsPlaying then
-		return true, self:notify(timing, "Animation stopped playing.")
-	end
-
-	if timing.iae and not timing.ieae and not track.IsPlaying and track.TimePosition < track.Length then
-		return true, self:notify(timing, "Animation stopped playing early.")
-	end
-end)
-
----Repeat conditional. Extra parameter 'track' added on.
----@param self AnimatorDefender
----@param info RepeatInfo
----@return boolean
-AnimatorDefender.rc = LPH_NO_VIRTUALIZE(function(self, info)
-	---@note: There are cases where we might not have a track. If it's not handled properly, it will throw an error.
-	-- Perhaps, the animation can end and we're handling a different repeat conditional.
-	if not info.track then
-		return Logger.warn(
-			"(%s) Did you forget to pass the track? Or perhaps you forgot to place a hook before using this function.",
-			PP_SCRAMBLE_STR(info.timing.name)
-		)
-	end
-
-	if self:stopped(info.track, info.timing) then
-		return false
-	end
-
-	if info.timing.iae and os.clock() - info.start >= ((info.timing.mat / 1000) or MAX_REPEAT_TIME) then
-		return self:notify(info.timing, "Max animation timeout exceeded.")
-	end
-
-	return true
-end)
-
----Run predict facing hitbox check.
----@param self AnimatorDefender
----@param options HitboxOptions
----@return boolean
-AnimatorDefender.pfh = LPH_NO_VIRTUALIZE(function(self, options)
-	local yrate = PositionHistory.yrate(self.entity)
-	if not yrate then
-		return false
-	end
-
-	local root = self.entity:FindFirstChild("HumanoidRootPart")
-	if not root then
-		return false
-	end
-
-	local localRoot = players.LocalPlayer.Character and players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-	if not localRoot then
-		return false
-	end
-
-	if math.abs(yrate) < PREDICT_FACING_DELTA then
-		return
-	end
-
-	local clone = options:clone()
-	clone.spredict = false
-	clone.hcolor = Color3.new(0, 1, 1)
-	clone.mcolor = Color3.new(1, 1, 0)
-
-	local result = false
-	local store = OriginalStore.new()
-
-	store:run(root, "CFrame", CFrame.lookAt(root.Position, localRoot.Position), function()
-		result = self:hc(clone, nil)
-	end)
-
-	return result
-end)
-
----Run past hitbox check.
----@param timing Timing
----@param options HitboxOptions
----@return boolean
-AnimatorDefender.phd = LPH_NO_VIRTUALIZE(function(self, timing, options)
-	for _, cframe in next, PositionHistory.stepped(self.entity, HISTORY_STEPS, timing.phds) or {} do
-		local clone = options:clone()
-		clone.spredict = false
-		clone.cframe = cframe
-		clone.hcolor = Color3.new(0.839215, 0.976470, 0.537254)
-		clone.mcolor = Color3.new(0.564705, 0, 1)
-
-		if not self:hc(clone, nil) then
-			continue
-		end
-
-		return true
-	end
-end)
-
----Get extrapolated seconds.
----@param self Defender
----@param timing AnimationTiming
----@return number
-AnimatorDefender.fsecs = LPH_NO_VIRTUALIZE(function(self, timing)
-	local player = players:GetPlayerFromCharacter(self.entity)
-	local sd = (player and player:GetAttribute("AveragePing") or 50.0) / 2000
-	return (timing.pfht or 0.15) + (sd + Defender.rdelay())
-end)
-
----Run our facing extrapolation / interpolation.
-AnimatorDefender.fpc = LPH_NO_VIRTUALIZE(function(self, timing, options)
-	if timing.duih then
-		return false
-	end
-
-	if timing.pfh and self:pfh(options) then
-		return true
-	end
-
-	if timing.phd and self:phd(timing, options) then
-		return true
-	end
-end)
-
----Check if we're in a valid state to proceed with the action.
----@param self AnimatorDefender
----@param timing AnimationTiming
----@param action Action
----@return boolean
-AnimatorDefender.valid = LPH_NO_VIRTUALIZE(function(self, timing, action)
-	if not Defender.valid(self, timing, action) then
-		return false
-	end
-
-	if not self.track then
-		return self:notify(timing, "No current track.")
-	end
-
-	if not self.entity then
-		return self:notify(timing, "No entity found.")
-	end
-
-	local target = self:target(self.entity)
-	if not target then
-		return self:notify(timing, "Not a viable target.")
-	end
-
-	local root = self.entity:FindFirstChild("HumanoidRootPart")
-	if not root then
-		return self:notify(timing, "No humanoid root part found.")
-	end
-
-	if self:stopped(self.track, timing) then
-		return false
-	end
-
-	local options = HitboxOptions.new(root, timing)
-	options.spredict = not timing.duih and not timing.dp
-	options.ptime = self:fsecs(timing)
-	options.action = action
-	options.entity = self.entity
-
-	local info = RepeatInfo.new(timing)
-	info.track = self.track
-
-	local hc = self:hc(options, timing.duih and info or nil)
-	if hc then
-		return true
-	end
-
-	local pc = self:fpc(timing, options)
-	if pc then
-		return true
-	end
-
-	return self:notify(timing, "Not in hitbox.")
-end)
-
----Add a new Keyframe action.
----@param self AnimatorDefender
----@param action Action
----@param tp number
-function AnimatorDefender:akeyframe(action, tp)
-	-- Set time position.
-	action.tp = tp
-
-	---@note: These have to be sent in by a module, so the hitbox and the name also have to get fixed.
-	action["_type"] = PP_SCRAMBLE_STR(action["_type"])
-	action["name"] = PP_SCRAMBLE_STR(action["name"])
-	action["hitbox"] = Vector3.new(
-		PP_SCRAMBLE_RE_NUM(action["hitbox"].X),
-		PP_SCRAMBLE_RE_NUM(action["hitbox"].Y),
-		PP_SCRAMBLE_RE_NUM(action["hitbox"].Z)
-	)
-	if action["shape"] ~= nil then
-		action["shape"] = PP_SCRAMBLE_STR(action["shape"])
-	end
-	if action["offset"] then
-		action["offset"] = Vector3.new(
-			PP_SCRAMBLE_RE_NUM(action["offset"].X),
-			PP_SCRAMBLE_RE_NUM(action["offset"].Y),
-			PP_SCRAMBLE_RE_NUM(action["offset"].Z)
-		)
-	end
-
-	-- Insert in list.
-	table.insert(self.keyframes, action)
-end
-
----Get time position of current track.
----@return number?
-function AnimatorDefender:tp()
-	if not self.track or self.offset == nil then
-		return nil
-	end
-
-	---@note: Compensate for ping. Convert seconds to time position by adjusting for speed.
-	--- Higher speed means it will delay earlier.
-	--- Smaller speed means it will delay later.
-	return self.track.TimePosition + ((self.offset + self.sdelay()) / self.track.Speed)
-end
-
----Get latest keyframe action that we've exceeded.
----@return Action?
-AnimatorDefender.latest = LPH_NO_VIRTUALIZE(function(self)
-	local latestKeyframe = nil
-	local latestTimePosition = nil
-
-	for _, keyframe in next, self.keyframes do
-		if (self:tp() or 0.0) <= keyframe.tp then
-			continue
-		end
-
-		if latestTimePosition and keyframe.tp <= latestTimePosition then
-			continue
-		end
-
-		latestTimePosition = keyframe.tp
-		latestKeyframe = keyframe
-	end
-
-	return latestKeyframe
-end)
-
----Update handling.
----@param self AnimatorDefender
-AnimatorDefender.update = LPH_NO_VIRTUALIZE(function(self)
-	for track, data in next, self.pbdata do
-		-- Don't process tracks.
-		if not Configuration.expectToggleValue("ShowAnimationVisualizer") then
-			self.pbdata[track] = nil
-			continue
-		end
-
-		-- Check if the track is playing.
-		if not track.IsPlaying then
-			-- Remove out of 'pbdata' and put it in to the recorded table.
-			self.pbdata[track] = nil
-			self.rpbdata[tostring(track.Animation.AnimationId)] = data
-
-			-- Continue to next playback data.
-			continue
-		end
-
-		-- Start tracking the animation's speed.
-		data:astrack(track.Speed)
-	end
-
-	-- Run on validated track & timing.
-	if not self.track or not self.timing then
-		return
-	end
-
-	if not self.track.IsPlaying then
-		return
-	end
-
-	-- Find the latest keyframe that we have exceeded, if there is even any.
-	local latest = self:latest()
-	if not latest then
-		return
-	end
-
-	-- Clear the keyframes that we have exceeded.
-	local tp = self:tp() or 0.0
-
-	for idx, keyframe in next, self.keyframes do
-		if tp <= keyframe.tp then
-			continue
-		end
-
-		self.keyframes[idx] = nil
-	end
-
-	-- Log.
-	self:notify(
-		self.timing,
-		"(%.2f) (really %.2f) Keyframe action '%s' with type '%s' is being executed.",
-		tp,
-		self.track.TimePosition,
-		PP_SCRAMBLE_STR(latest.name),
-		PP_SCRAMBLE_STR(latest._type)
-	)
-
-	-- Ok, run action of this keyframe.
-	self.maid:mark(
-		TaskSpawner.spawn(
-			string.format("KeyframeAction_%s", PP_SCRAMBLE_STR(latest._type)),
-			self.handle,
-			self,
-			self.timing,
-			latest,
-			false
-		)
-	)
-end)
-
----Virtualized processing checks.
----@param track AnimationTrack
----@return boolean
-function AnimatorDefender:pvalidate(track)
-	if track.Priority == Enum.AnimationPriority.Core then
-		return false
-	end
-
-	return true
-end
-
----Process animation track.
----@todo: AP telemetry - aswell as tracking effects that are added with timestamps and current ping to that list.
----@param self AnimatorDefender
----@param track AnimationTrack
-AnimatorDefender.process = LPH_NO_VIRTUALIZE(function(self, track)
-	local localCharacter = players.LocalPlayer.Character
-	local isLocal = localCharacter and self.entity == localCharacter
-
-	if not self:pvalidate(track) then
-		return
-	end
-
-	-- Clean up Keyframe maid.
-	self.kfmaid:clean()
-
-	-- Add to playback data list.
-	if Configuration.expectToggleValue("ShowAnimationVisualizer") then
-		self.pbdata[track] = PlaybackData.new(self.entity)
-	end
-
-	-- Animation ID.
-	local aid = tostring(track.Animation.AnimationId)
-
-	-- In logging range?
-	local distance = self:distance(self.entity)
-	local logAll = Configuration.expectToggleValue("LogAllAnimations")
-	if logAll and not distance then
-		distance = 0
-	end
-	local ilr = logAll
-		or (
-			distance
-			and distance >= (Configuration.expectOptionValue("MinimumLoggerDistance") or 0)
-			and distance <= (Configuration.expectOptionValue("MaximumLoggerDistance") or 0)
-		)
-
-	-- Keyframe logging.
-	local keyframeReached = Signal.new(track.KeyframeReached)
-
-	self.kfmaid:add(keyframeReached:connect("AnimationDefender_OnKeyFrameReached", function(kfname)
-		if not ilr then
-			return
-		end
-
-		Library:AddKeyFrameEntry(distance, aid, kfname, track.TimePosition, false)
-	end))
-
-	---@type AnimationTiming?
-	local timing = self:initial(self.entity, SaveManager.as, self.entity.Name, aid)
-	if not timing then
-		if isLocal then
-			M1AutoTrade.handleLocalM1(nil, track)
-		end
-		return
-	end
-
-	if ilr then
-		Library:AddExistAnimEntry(self.entity.Name, distance, timing)
-	end
-
-	if isStandModel(self.entity) then
-		if Configuration.expectToggleValue("EnableAutoDefense") and isBlacklistedM1(aid) then
-			InputClient.blockHoldSeconds(0.3)
-		end
-		return
-	end
-
-	if isLocal then
-		M1AutoTrade.handleLocalM1(timing, track)
-		return
-	end
-
-	if type(handleAutoCounterTiming) == "function" then
-		handleAutoCounterTiming(timing, "Animation", distance)
-	end
-
-	M1AutoTrade.handle(self, timing, distance)
-
-	if not Configuration.expectToggleValue("EnableAutoDefense") then
-		return
-	end
-
-	local humanoidRootPart = self.entity:FindFirstChild("HumanoidRootPart")
-	if not humanoidRootPart then
-		return
-	end
-
-	---@note: Clean up previous tasks that are still waiting or suspended because they're in a different track.
-	self:clean()
-
-	-- Set current data.
-	self.timing = timing
-	self.track = track
-	self.offset = self.rdelay()
-
-	if timing._id == "rbxassetid://116007627948983" then
-		local dummyAction = { ihbc = true }
-		if not self:valid(timing, dummyAction) then
-			return
-		end
-		local dist = distance or self:distance(self.entity) or math.huge
-		if dist <= 40 then
-			InputClient.dash("forward")
-			InputClient.m1Hold(0.8)
-		else
-			InputClient.dash("back")
-			task.delay(1.2, function()
-				InputClient.dash("back")
-			end)
-		end
-		return
-	end
-
-	-- Fake mistime rate.
-	---@type Action?
-	local _, faction = next(timing.actions._data)
-
-	-- Obviously, we don't want any modules where we don't know how many actions there are.
-	-- We don't want any actions that have a count that is not equal to 1.
-	-- We need to check if we can atleast dash, because we will be going to are fallback.
-	-- We must also check if our action isn't too short or is not a parry type, defeating the purpose.
-	if
-		not NO_HITBOX_ONLY
-		and Configuration.expectToggleValue("AllowFailure")
-		and not timing.rpue
-		and timing.actions:count() == 1
-		and Random.new():NextNumber(1.0, 100.0) <= (Configuration.expectOptionValue("FakeMistimeRate") or 0.0)
-		and faction
-		and PP_SCRAMBLE_STR(faction._type) == "Parry"
-		and faction:when() > (self.rtt() + 0.6)
-	then
-		InputClient.deflect()
-
-		self:notify(timing, "Intentionally mistimed to simulate human error.")
-	end
-
-	---@note: Start processing the timing. Add the actions if we're not RPUE.
-	if not timing.rpue then
-		return self:actions(timing)
-	end
-
-	if not self:cooldownAllow(timing) then
-		return
-	end
-
-	-- Start RPUE.
-	local info = RepeatInfo.new(timing, self.rdelay())
-	info.track = track
-
-	self:mark(Task.new(string.format("RPUE_%s_%i", timing.name, 0), function()
-		return timing:rsd() - info.irdelay - self.sdelay()
-	end, timing.punishable, timing.after, self.rpue, self, self.entity, timing, info))
-
-	-- Notify.
-	if not LRM_UserNote or LRM_UserNote == "tester" then
-		self:notify(
-			timing,
-			"Added RPUE '%s' (%.2fs, then every %.2fs) with ping '%.2f' (changing) subtracted.",
-			PP_SCRAMBLE_STR(timing.name),
-			timing:rsd(),
-			timing:rpd(),
-			self.rtt()
-		)
-	else
-		self:notify(
-			timing,
-			"Added RPUE '%s' ([redacted], then every [redacted]) with ping '%.2f' (changing) subtracted.",
-			PP_SCRAMBLE_STR(timing.name),
-			self.rtt()
-		)
-	end
-end)
-
----Clean up the defender.
-function AnimatorDefender:clean()
-	-- Empty data.
-	self.keyframes = {}
-	self.heffects = {}
-
-	-- Empty Keyframe maid.
-	self.kfmaid:clean()
-
-	-- Clean through base method.
-	Defender.clean(self)
-end
-
----Create new AnimatorDefender object.
----@param animator Animator
----@return AnimatorDefender
-function AnimatorDefender.new(animator)
-	local entity = animator:FindFirstAncestorWhichIsA("Model")
-	if not entity then
-		return error(string.format("AnimatorDefender.new(%s) - no entity.", animator:GetFullName()))
-	end
-
-	local self = setmetatable(Defender.new(), AnimatorDefender)
-	local animationPlayed = Signal.new(animator.AnimationPlayed)
-
-	self.animator = animator
-	self.entity = entity
-	self.kfmaid = Maid.new()
-
-	self.track = nil
-	self.timing = nil
-	self.rdelay = nil
-
-	self.heffects = {}
-	self.keyframes = {}
-	self.pbdata = {}
-	self.rpbdata = {}
-
-	self.maid:mark(animationPlayed:connect(
-		"AnimatorDefender_OnAnimationPlayed",
-		LPH_NO_VIRTUALIZE(function(track)
-			self:process(track)
 		end)
-	))
 
-	return self
-end
-
--- Return AnimatorDefender module.
-return AnimatorDefender
-
-end)
-
-
--- MODULE: Features/Combat/Objects/Defender
-
-defineModule("Features/Combat/Objects/Defender", function()
----@module Utility.Logger
-local Logger = require("Utility/Logger")
-
----@module Utility.Configuration
-local Configuration = require("Utility/Configuration")
-
----@module Features.Combat.Objects.Task
-local Task = require("Features/Combat/Objects/Task")
-
----@module Utility.Maid
-local Maid = require("Utility/Maid")
-
----@module GUI.Library
-local Library = require("GUI/Library")
-
----@module Utility.TaskSpawner
-local TaskSpawner = require("Utility/TaskSpawner")
-
----@module Features.Combat.Targeting
-local Targeting = require("Features/Combat/Targeting")
-
----@module Features.Combat.PositionHistory
-local PositionHistory = require("Features/Combat/PositionHistory")
-
----@module Features.Combat.Objects.HitboxOptions
-local HitboxOptions = require("Features/Combat/Objects/HitboxOptions")
-
----@module Game.InputClient
-local InputClient = require("Game/InputClient")
-
----@module Features.Combat.AttributeListener
-local AttributeListener = require("Features/Combat/AttributeListener")
-
----@module Game.Keybinding
-local Keybinding = require("Game/Keybinding")
-
----@module Utility.OriginalStore
-local OriginalStore = require("Utility/OriginalStore")
-
----@class Defender
----@field tasks Task[]
----@field tmaid Maid Cleaned up every clean cycle.
----@field rhook table<string, function> Hooked functions that we can restore on clean-up.
----@field markers table<string, boolean> Blocking markers for unknown length timings. If the entry exists and is true, then we're blocking.
----@field maid Maid
----@field hmaid Maid
-local Defender = {}
-Defender.__index = Defender
-Defender.__type = "Defender"
-
--- Services.
-local stats = game:GetService("Stats")
-local userInputService = game:GetService("UserInputService")
-local players = game:GetService("Players")
-local textChatService = game:GetService("TextChatService")
-local debrisService = game:GetService("Debris")
-
--- Constants.
-local MAX_VISUALIZATION_TIME = 5.0
-local MAX_REPEAT_WAIT = 10.0
-local PREDICTION_LENIENCY_MULTI = 5.0
-local PREDICTION_EXTRA_SECONDS = 0
-local PREDICTION_MAX_SECONDS = 0.5
-local PREDICTION_SPEED_REF = 16
-local PREDICTION_MIN_SCALE = 0.6
-local PREDICTION_MAX_SCALE = 1.4
-local blockTagCounter = 0
-local defenseCooldowns = setmetatable({}, { __mode = "k" })
-
-local function timingKey(timing)
-	if timing and type(timing.id) == "function" then
-		local ok, key = pcall(timing.id, timing)
-		if ok and key then
-			return tostring(key)
-		end
-	end
-	return tostring(timing and timing.name or "Unknown")
-end
-
-local function nextBlockTagId()
-	blockTagCounter += 1
-	return string.format("Defender_StartBlock_%d", blockTagCounter)
-end
-
----Log a miss to the UI library with distance check.
----@param type string
----@param key string
----@param name string?
----@param distance number
----@param parent string? If provided, will be shown in the log.
----@return boolean
-function Defender:miss(type, key, name, distance, parent)
-	if not Configuration.expectToggleValue("ShowLoggerWindow") then
-		return false
-	end
-
-	if
-		distance < (Configuration.expectOptionValue("MinimumLoggerDistance") or 0)
-		or distance > (Configuration.expectOptionValue("MaximumLoggerDistance") or 0)
-	then
-		return false
-	end
-
-	Library:AddMissEntry(type, key, name, distance, parent)
-
-	return true
-end
-
----Fetch distance.
----@param from Model? | BasePart?
----@return number?
-function Defender:distance(from)
-	if not from then
-		return
-	end
-
-	local entRootPart = from
-
-	if from:IsA("Model") then
-		entRootPart = from:FindFirstChild("HumanoidRootPart")
-	end
-
-	if not entRootPart then
-		return
-	end
-
-	local localCharacter = players.LocalPlayer.Character
-	if not localCharacter then
-		return
-	end
-
-	local localRootPart = localCharacter:FindFirstChild("HumanoidRootPart")
-	if not localRootPart then
-		return
-	end
-
-	return (entRootPart.Position - localRootPart.Position).Magnitude
-end
-
----Find target - hookable function.
----@param self Defender
----@param entity Model
----@return Target?
-Defender.target = LPH_NO_VIRTUALIZE(function(self, entity)
-	return Targeting.find(entity)
-end)
-
----Repeat until parry end.
----@param self Defender
----@param entity Model
----@param timing AnimationTiming
----@param info RepeatInfo
-Defender.rpue = LPH_NO_VIRTUALIZE(function(self, entity, timing, info)
-	local distance = self:distance(entity)
-	if not distance then
-		return Logger.warn("Stopping RPUE '%s' because the distance is not valid.", PP_SCRAMBLE_STR(timing.name))
-	end
-
-	if timing and (distance < PP_SCRAMBLE_NUM(timing.imdd) or distance > PP_SCRAMBLE_NUM(timing.imxd)) then
-		return self:notify(timing, "Distance is out of range.")
-	end
-
-	if not self:rc(info) then
-		return Logger.warn(
-			"Stopping RPUE '%s' because the repeat condition is not valid.",
-			PP_SCRAMBLE_STR(timing.name)
-		)
-	end
-
-	local target = self:target(entity)
-
-	local options = HitboxOptions.new(CFrame.new(), timing)
-	options.spredict = true
-	options.part = target and target.root
-	options.entity = entity
-
-	local success = target and self:hc(options, timing.duih and info or nil)
-
-	info.index = info.index + 1
-
-	self:mark(Task.new(string.format("RPUE_%s_%i", PP_SCRAMBLE_STR(timing.name), info.index), function()
-		return timing:rpd() - info.irdelay - self.sdelay()
-	end, timing.punishable, timing.after, self.rpue, self, self.entity, timing, info))
-
-	if not target then
-		return Logger.warn("Skipping RPUE '%s' because the target is not valid.", PP_SCRAMBLE_STR(timing.name))
-	end
-
-	if not success then
-		return Logger.warn("Skipping RPUE '%s' because we are not in the hitbox.", PP_SCRAMBLE_STR(timing.name))
-	end
-
-	if not timing.srpn then
-		self:notify(timing, "(%i) Action 'RPUE Parry' is being executed.", info.index)
-	end
-
-	InputClient.block(true)
-	InputClient.block(false)
-end)
-
----Check if we're in a valid state to proceed with action handling. Extend me.
----@param self Defender
----@param timing Timing
----@param action Action
----@return boolean
-Defender.valid = LPH_NO_VIRTUALIZE(function(self, timing, action)
-	if not Configuration.expectToggleValue("EnableAutoDefense") then
-		if Configuration.expectToggleValue("EnableM1AutoTrade") then
-			return self:notify(timing, "Auto Defense disabled (M1 Trade only).")
-		end
-		return self:notify(timing, "Auto Defense disabled.")
-	end
-
-	local character = players.LocalPlayer.Character
-	if not character then
-		return self:notify(timing, "No character found.")
-	end
-
-	local integer = Random.new():NextNumber(1.0, 100.0)
-	local rate = Configuration.expectOptionValue("FailureRate") or 0.0
-	if not NO_HITBOX_ONLY and Configuration.expectToggleValue("AllowFailure") and integer <= rate then
-		return self:notify(timing, "(%i <= %i) Intentionally did not run.", integer, rate)
-	end
-
-	local selectedFilters = Configuration.expectOptionValue("AutoDefenseFilters") or {}
-	local function filterEnabled(name, legacy)
-		return selectedFilters[name] or (legacy and selectedFilters[legacy])
-	end
-
-	local currentState = character:GetAttribute("CurrentState")
-	if filterEnabled("Disable When Knocked Recently") and AttributeListener.krecently and AttributeListener.krecently() then
-		return self:notify(timing, "User was knocked recently.")
-	end
-
-	if filterEnabled("Disable When In Dash") and currentState == "Dashing" then
-		return self:notify(timing, "User is dashing.")
-	end
-
-	if filterEnabled("Disable When In Flashstep") and currentState == "Flashstep" then
-		return self:notify(timing, "User is flashstepping.")
-	end
-
-	if currentState == "Attacking" or currentState == "Skill" then
-		return self:notify(timing, "Currently attacking.")
-	end
-
-	local chatInputBarConfiguration = textChatService:FindFirstChildOfClass("ChatInputBarConfiguration")
-	if
-		filterEnabled("Disable When Textbox Focused")
-		and (userInputService:GetFocusedTextBox() or (chatInputBarConfiguration and chatInputBarConfiguration.IsFocused))
-	then
-		return self:notify(timing, "User is typing in a text box.")
-	end
-
-	if filterEnabled("Disable When Window Not Active") and iswindowactive and not iswindowactive() then
-		return self:notify(timing, "Window is not active.")
-	end
-
-	if filterEnabled("Disable When Holding Block")
-		and userInputService:IsKeyDown((Keybinding.info and Keybinding.info["Block / Parry"]) or Enum.KeyCode.F)
-	then
-		return self:notify(timing, "User is holding block.")
-	end
-
-	if timing.tag == "M1" and filterEnabled("Filter Out M1s") then
-		return self:notify(timing, "Attacker is using a 'M1' attack.")
-	end
-
-	if (timing.tag == "Skill" or timing.tag == "Mantra") and filterEnabled("Filter Out Skills", "Filter Out Mantras") then
-		return self:notify(timing, "Attacker is using a 'Skill' attack.")
-	end
-
-	if (timing.tag == "Counter" or timing.tag == "Critical")
-		and filterEnabled("Filter Out Counters", "Filter Out Criticals")
-	then
-		return self:notify(timing, "Attacker is using a 'Counter' attack.")
-	end
-
-	if (timing.tag == "Other" or timing.tag == "Undefined")
-		and filterEnabled("Filter Out Others", "Filter Out Undefined")
-	then
-		return self:notify(timing, "Attacker is using an 'Other' attack.")
-	end
-
-	return true
-end)
-
-function Defender:cooldownAllow(timing)
-	local ms = Configuration.expectOptionValue("DefenseCooldownMs") or 0
-	if NO_HITBOX_ONLY and ms <= 0 then
-		ms = 45
-	end
-	if ms <= 0 then
-		return true
-	end
-	local entity = self.entity or self.owner or self.part
-	if not entity then
-		return true
-	end
-	local key = timingKey(timing)
-	local now = os.clock()
-	local bucket = defenseCooldowns[entity]
-	if not bucket then
-		bucket = {}
-		defenseCooldowns[entity] = bucket
-	end
-	local last = bucket[key]
-	if last and (now - last) < (ms / 1000) then
-		return false
-	end
-	bucket[key] = now
-	return true
-end
-
----Check if any parts that are in our filter were hit.
----@note: Solara fallback.
-local function checkParts(parts, filter)
-	for _, part in next, parts do
-		for _, fpart in next, filter do
-			if part ~= fpart and not part:IsDescendantOf(fpart) then
-				continue
+		local endConnection
+		endConnection = game:GetService("UserInputService").InputEnded:Connect(function(inputEnded)
+			if inputEnded.UserInputType == Enum.UserInputType.MouseButton1 then
+				connection:Disconnect()
+				endConnection:Disconnect()
 			end
-
-			return true
-		end
-	end
-
-	return false
-end
-
----Visualize a position and size.
----@param self Defender
----@param identifier number? If the identifier is nil, then we will auto-generate one for each visualization.
----@param cframe CFrame
----@param size Vector3
----@param color Color3
----@param shape string?
-Defender.visualize = LPH_NO_VIRTUALIZE(function(self, identifier, cframe, size, color, shape)
-	local id = identifier or self.hmaid:uid()
-	local vpart = self.hmaid[id]
-	local okParent, parent = true, nil
-	if vpart then
-		okParent, parent = pcall(function()
-			return vpart.Parent
 		end)
 	end
-	if vpart and (not okParent or parent == nil) then
-		pcall(function()
-			vpart:Destroy()
-		end)
-		self.hmaid[id] = nil
-		vpart = nil
-	end
-	vpart = vpart or Instance.new("Part")
-	local hitboxShape = shape == "Ball" and "Ball" or "Box"
-	local renderSize = size
-	if hitboxShape == "Ball" then
-		local radius = math.max(size.X, size.Y, size.Z) / 2
-		renderSize = Vector3.new(radius * 2, radius * 2, radius * 2)
-		vpart.Shape = Enum.PartType.Ball
+end)
+
+local uICorner = Instance.new("UICorner")
+uICorner.Name = "UICorner"
+uICorner.CornerRadius = UDim.new(0, 25)
+uICorner.Parent = frame
+
+local logo = Instance.new("ImageLabel")
+logo.Name = "Logo"
+logo.BackgroundTransparency = 1
+logo.BorderSizePixel = 0
+logo.Image = "rbxassetid://92661965333918"
+logo.Position = UDim2.fromScale(0.755, 0.2)
+logo.AnchorPoint = Vector2.new(0.5, 0.5)
+logo.Size = UDim2.fromOffset(175, 175)
+logo.Parent = frame
+
+local arsenal = Instance.new("Frame")
+arsenal.Name = "Arsenal"
+arsenal.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+arsenal.BackgroundTransparency = 0.9
+arsenal.BorderColor3 = Color3.fromRGB(0, 0, 0)
+arsenal.BorderSizePixel = 0
+arsenal.Position = UDim2.fromScale(0.03, 0.0415)
+arsenal.Size = UDim2.fromOffset(330, 65)
+
+local arsenalStroke = Instance.new("UIStroke")
+arsenalStroke.Name = "UIStroke"
+arsenalStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+arsenalStroke.Color = Color3.fromRGB(26, 29, 37)
+arsenalStroke.Thickness = 1.9
+arsenalStroke.Parent = arsenal
+
+local uICorner1 = Instance.new("UICorner")
+uICorner1.Name = "UICorner"
+uICorner1.CornerRadius = UDim.new(0, 25)
+uICorner1.Parent = arsenal
+
+local textLabel2 = Instance.new("TextLabel")
+textLabel2.Name = "TextLabel"
+textLabel2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+textLabel2.BackgroundTransparency = 1
+textLabel2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+textLabel2.BorderSizePixel = 0
+textLabel2.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+textLabel2.Position = UDim2.fromScale(0.2, 0.0462)
+textLabel2.Size = UDim2.fromOffset(197, 58)
+textLabel2.Text = "Arsenal"
+textLabel2.TextColor3 = Color3.fromRGB(255, 255, 255)
+textLabel2.TextSize = 62
+textLabel2.TextWrapped = true
+textLabel2.Parent = arsenal
+
+arsenal.Parent = frame
+
+local loadbtn = Instance.new("TextButton")
+loadbtn.Name = "Loadbtn"
+loadbtn.BackgroundColor3 = Color3.fromRGB(27, 29, 37)
+loadbtn.BorderColor3 = Color3.fromRGB(0, 0, 0)
+loadbtn.BorderSizePixel = 0
+loadbtn.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+loadbtn.Position = UDim2.fromScale(0.527, 0.656)
+loadbtn.Size = UDim2.fromOffset(405, 62)
+loadbtn.Text = "Load"
+loadbtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+loadbtn.TextScaled = true
+loadbtn.TextSize = 14
+loadbtn.TextWrapped = true
+
+local uICorner2 = Instance.new("UICorner")
+uICorner2.Name = "UICorner"
+uICorner2.CornerRadius = UDim.new(0, 25)
+uICorner2.Parent = loadbtn
+
+loadbtn.Parent = frame
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+closeButton.BackgroundTransparency = 1
+closeButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
+closeButton.BorderSizePixel = 0
+closeButton.FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json")
+closeButton.Position = UDim2.fromScale(0.949, 0.0172)
+closeButton.Size = UDim2.fromOffset(44, 41)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(58, 67, 98)
+closeButton.TextScaled = true
+closeButton.TextSize = 14
+closeButton.TextWrapped = true
+
+local uIStroke1 = Instance.new("UIStroke")
+uIStroke1.Name = "UIStroke"
+uIStroke1.Color = Color3.fromRGB(255, 255, 255)
+uIStroke1.Enabled = false
+uIStroke1.Thickness = 1.2
+uIStroke1.Parent = closeButton
+
+closeButton.Parent = frame
+
+local textLabel5 = Instance.new("TextLabel")
+textLabel5.Name = "TextLabel"
+textLabel5.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+textLabel5.BorderColor3 = Color3.fromRGB(0, 0, 0)
+textLabel5.BorderSizePixel = 0
+textLabel5.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+textLabel5.Position = UDim2.fromScale(0.628, 0.821)
+textLabel5.Size = UDim2.fromOffset(200, 50)
+textLabel5.Text = "Thank you for using Z3US <3"
+textLabel5.TextColor3 = Color3.fromRGB(40, 58, 85)
+textLabel5.TextSize = 34
+textLabel5.Parent = frame
+
+local textLabel6 = Instance.new("TextLabel")
+textLabel6.Name = "TextLabel"
+textLabel6.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+textLabel6.BorderColor3 = Color3.fromRGB(0, 0, 0)
+textLabel6.BorderSizePixel = 0
+textLabel6.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+textLabel6.Position = UDim2.fromScale(0.645, 0.447)
+textLabel6.Size = UDim2.fromOffset(200, 50)
+textLabel6.Text = "No Script Selected"
+textLabel6.TextColor3 = Color3.fromRGB(255, 255, 255)
+textLabel6.TextSize = 34
+textLabel6.Parent = frame
+
+local planks = Instance.new("Frame")
+planks.Name = "Planks"
+planks.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+planks.BackgroundTransparency = 0.9
+planks.BorderColor3 = Color3.fromRGB(0, 0, 0)
+planks.BorderSizePixel = 0
+planks.Position = UDim2.fromScale(0.03, 0.17786)
+planks.Size = UDim2.fromOffset(330, 65)
+
+local planksStroke = Instance.new("UIStroke")
+planksStroke.Name = "UIStroke"
+planksStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+planksStroke.Color = Color3.fromRGB(26, 29, 37)
+planksStroke.Thickness = 1.9
+planksStroke.Parent = planks
+
+local uICorner3 = Instance.new("UICorner")
+uICorner3.Name = "UICorner"
+uICorner3.CornerRadius = UDim.new(0, 25)
+uICorner3.Parent = planks
+
+local textLabel7 = Instance.new("TextLabel")
+textLabel7.Name = "TextLabel"
+textLabel7.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+textLabel7.BackgroundTransparency = 1
+textLabel7.BorderColor3 = Color3.fromRGB(0, 0, 0)
+textLabel7.BorderSizePixel = 0
+textLabel7.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+textLabel7.Position = UDim2.fromScale(0.2, 0.0462)
+textLabel7.Size = UDim2.fromOffset(197, 58)
+textLabel7.Text = "Planks"
+textLabel7.TextColor3 = Color3.fromRGB(255, 255, 255)
+textLabel7.TextSize = 62
+textLabel7.TextWrapped = true
+textLabel7.Parent = planks
+
+planks.Parent = frame
+
+local hypershot = Instance.new("Frame")
+hypershot.Name = "Hypershot"
+hypershot.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+hypershot.BackgroundTransparency = 0.9
+hypershot.BorderColor3 = Color3.fromRGB(0, 0, 0)
+hypershot.BorderSizePixel = 0
+hypershot.Position = UDim2.fromScale(0.03, 0.58694)
+hypershot.Size = UDim2.fromOffset(330, 65)
+
+local hypershotStroke = Instance.new("UIStroke")
+hypershotStroke.Name = "UIStroke"
+hypershotStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+hypershotStroke.Color = Color3.fromRGB(26, 29, 37)
+hypershotStroke.Thickness = 1.9
+hypershotStroke.Parent = hypershot
+
+local uICornerHypershot = Instance.new("UICorner")
+uICornerHypershot.Name = "UICorner"
+uICornerHypershot.CornerRadius = UDim.new(0, 25)
+uICornerHypershot.Parent = hypershot
+
+local textLabelHypershot = Instance.new("TextLabel")
+textLabelHypershot.Name = "TextLabel"
+textLabelHypershot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+textLabelHypershot.BackgroundTransparency = 1
+textLabelHypershot.BorderColor3 = Color3.fromRGB(0, 0, 0)
+textLabelHypershot.BorderSizePixel = 0
+textLabelHypershot.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+textLabelHypershot.Position = UDim2.fromScale(0.15, 0.0462)
+textLabelHypershot.Size = UDim2.fromOffset(250, 58)
+textLabelHypershot.Text = "Hypershot"
+textLabelHypershot.TextColor3 = Color3.fromRGB(255, 255, 255)
+textLabelHypershot.TextSize = 62
+textLabelHypershot.TextWrapped = true
+textLabelHypershot.Parent = hypershot
+
+hypershot.Parent = frame
+
+local universal = Instance.new("Frame")
+universal.Name = "Universal"
+universal.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+universal.BackgroundTransparency = 0.9
+universal.BorderColor3 = Color3.fromRGB(0, 0, 0)
+universal.BorderSizePixel = 0
+universal.Position = UDim2.fromScale(0.03, 0.7233)
+universal.Size = UDim2.fromOffset(330, 65)
+
+local universalStroke = Instance.new("UIStroke")
+universalStroke.Name = "UIStroke"
+universalStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+universalStroke.Color = Color3.fromRGB(26, 29, 37)
+universalStroke.Thickness = 1.9
+universalStroke.Parent = universal
+
+local uICorner4 = Instance.new("UICorner")
+uICorner4.Name = "UICorner"
+uICorner4.CornerRadius = UDim.new(0, 25)
+uICorner4.Parent = universal
+
+local textLabel8 = Instance.new("TextLabel")
+textLabel8.Name = "TextLabel"
+textLabel8.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+textLabel8.BackgroundTransparency = 1
+textLabel8.BorderColor3 = Color3.fromRGB(0, 0, 0)
+textLabel8.BorderSizePixel = 0
+textLabel8.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+textLabel8.Position = UDim2.fromScale(0.2, 0.0462)
+textLabel8.Size = UDim2.fromOffset(197, 58)
+textLabel8.Text = "Universal"
+textLabel8.TextColor3 = Color3.fromRGB(255, 255, 255)
+textLabel8.TextSize = 62
+textLabel8.TextWrapped = true
+textLabel8.Parent = universal
+
+universal.Parent = frame
+
+local gunfightArena = Instance.new("Frame")
+gunfightArena.Name = "GunfightArena"
+gunfightArena.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+gunfightArena.BackgroundTransparency = 0.9
+gunfightArena.BorderColor3 = Color3.fromRGB(0, 0, 0)
+gunfightArena.BorderSizePixel = 0
+gunfightArena.Position = UDim2.fromScale(0.03, 0.45058)
+gunfightArena.Size = UDim2.fromOffset(330, 65)
+
+local gunfightArenaStroke = Instance.new("UIStroke")
+gunfightArenaStroke.Name = "UIStroke"
+gunfightArenaStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+gunfightArenaStroke.Color = Color3.fromRGB(26, 29, 37)
+gunfightArenaStroke.Thickness = 1.9
+gunfightArenaStroke.Parent = gunfightArena
+
+local uICorner5 = Instance.new("UICorner")
+uICorner5.Name = "UICorner"
+uICorner5.CornerRadius = UDim.new(0, 25)
+uICorner5.Parent = gunfightArena
+
+local textLabel9 = Instance.new("TextLabel")
+textLabel9.Name = "TextLabel"
+textLabel9.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+textLabel9.BackgroundTransparency = 1
+textLabel9.BorderColor3 = Color3.fromRGB(0, 0, 0)
+textLabel9.BorderSizePixel = 0
+textLabel9.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+textLabel9.Position = UDim2.fromScale(0.00639, 0.0462)
+textLabel9.Size = UDim2.fromOffset(322, 58)
+textLabel9.Text = "Gunfight Arena"
+textLabel9.TextColor3 = Color3.fromRGB(255, 255, 255)
+textLabel9.TextSize = 62
+textLabel9.TextWrapped = true
+textLabel9.Parent = gunfightArena
+
+gunfightArena.Parent = frame
+
+local counterblox = Instance.new("Frame")
+counterblox.Name = "Counterblox"
+counterblox.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+counterblox.BackgroundTransparency = 0.9
+counterblox.BorderColor3 = Color3.fromRGB(0, 0, 0)
+counterblox.BorderSizePixel = 0
+counterblox.Position = UDim2.fromScale(0.03, 0.31422)
+counterblox.Size = UDim2.fromOffset(330, 65)
+
+local counterbloxStroke = Instance.new("UIStroke")
+counterbloxStroke.Name = "UIStroke"
+counterbloxStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+counterbloxStroke.Color = Color3.fromRGB(26, 29, 37)
+counterbloxStroke.Thickness = 1.9
+counterbloxStroke.Parent = counterblox
+
+local uICorner6 = Instance.new("UICorner")
+uICorner6.Name = "UICorner"
+uICorner6.CornerRadius = UDim.new(0, 25)
+uICorner6.Parent = counterblox
+
+local textLabel10 = Instance.new("TextLabel")
+textLabel10.Name = "TextLabel"
+textLabel10.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+textLabel10.BackgroundTransparency = 1
+textLabel10.BorderColor3 = Color3.fromRGB(0, 0, 0)
+textLabel10.BorderSizePixel = 0
+textLabel10.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+textLabel10.Position = UDim2.fromScale(0.0276, 0.0462)
+textLabel10.Size = UDim2.fromOffset(311, 58)
+textLabel10.Text = "Counterblox"
+textLabel10.TextColor3 = Color3.fromRGB(255, 255, 255)
+textLabel10.TextSize = 62
+textLabel10.TextWrapped = true
+textLabel10.Parent = counterblox
+
+counterblox.Parent = frame
+
+local rivals = Instance.new("Frame")
+rivals.Name = "Rivals"
+rivals.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+rivals.BackgroundTransparency = 0.9
+rivals.BorderColor3 = Color3.fromRGB(0, 0, 0)
+rivals.BorderSizePixel = 0
+rivals.Position = UDim2.fromScale(0.03, 0.85966)
+rivals.Size = UDim2.fromOffset(330, 65)
+
+local rivalsStroke = Instance.new("UIStroke")
+rivalsStroke.Name = "UIStroke"
+rivalsStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+rivalsStroke.Color = Color3.fromRGB(26, 29, 37)
+rivalsStroke.Thickness = 1.9
+rivalsStroke.Parent = rivals
+
+local uICorner7 = Instance.new("UICorner")
+uICorner7.Name = "UICorner"
+uICorner7.CornerRadius = UDim.new(0, 25)
+uICorner7.Parent = rivals
+
+local textLabel11 = Instance.new("TextLabel")
+textLabel11.Name = "TextLabel"
+textLabel11.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+textLabel11.BackgroundTransparency = 1
+textLabel11.BorderColor3 = Color3.fromRGB(0, 0, 0)
+textLabel11.BorderSizePixel = 0
+textLabel11.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+textLabel11.Position = UDim2.fromScale(0.2, 0.0462)
+textLabel11.Size = UDim2.fromOffset(197, 58)
+textLabel11.Text = "Rivals"
+textLabel11.TextColor3 = Color3.fromRGB(255, 255, 255)
+textLabel11.TextSize = 62
+textLabel11.TextWrapped = true
+textLabel11.Parent = rivals
+
+rivals.Parent = frame
+
+local blackidk = Instance.new("Frame")
+blackidk.Name = "blackidk"
+blackidk.Parent = frame
+blackidk.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+blackidk.BackgroundTransparency = 0.2
+blackidk.BorderSizePixel = 0
+blackidk.Size = UDim2.new(1, 0, 1, 0)
+blackidk.ZIndex = 8
+blackidk.Visible = false
+
+local uICorner111 = Instance.new("UICorner")
+uICorner111.Name = "UICorner"
+uICorner111.CornerRadius = UDim.new(0, 25)
+uICorner111.Parent = blackidk
+
+local confipanel = Instance.new("Frame")
+confipanel.Name = "confipanel"
+confipanel.Parent = frame
+confipanel.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+confipanel.BackgroundTransparency = 0
+confipanel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+confipanel.BorderSizePixel = 0
+confipanel.Position = UDim2.new(0.5, -200, 0.5, -75)
+confipanel.Size = UDim2.new(0, 400, 0, 150)
+confipanel.Visible = false
+confipanel.ZIndex = 10
+
+local confirmCorner = Instance.new("UICorner")
+confirmCorner.CornerRadius = UDim.new(0, 12)
+confirmCorner.Parent = confipanel
+
+local confirmStroke = Instance.new("UIStroke")
+confirmStroke.Color = Color3.fromRGB(26, 29, 37)
+confirmStroke.Thickness = 2
+confirmStroke.Parent = confipanel
+
+local confirmText = Instance.new("TextLabel")
+confirmText.Name = "ConfirmText"
+confirmText.Parent = confipanel
+confirmText.BackgroundTransparency = 1
+confirmText.Size = UDim2.new(1, -20, 0, 70)
+confirmText.Position = UDim2.new(0, 10, 0, 10)
+confirmText.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+confirmText.Text = "WARNING: This script is may not be undetected! Running it may result in a ban.\nDo you still want to select it?"
+confirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
+confirmText.TextSize = 20
+confirmText.TextWrapped = true
+confirmText.TextXAlignment = Enum.TextXAlignment.Center
+
+local confirmYes = Instance.new("TextButton")
+confirmYes.Name = "ConfirmYes"
+confirmYes.Parent = confipanel
+confirmYes.BackgroundColor3 = Color3.fromRGB(140, 155, 208)
+confirmYes.Size = UDim2.new(0, 100, 0, 35)
+confirmYes.Position = UDim2.new(0.5, -110, 1, -45)
+confirmYes.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+confirmYes.Text = "Yes"
+confirmYes.TextColor3 = Color3.fromRGB(255, 255, 255)
+confirmYes.TextSize = 18
+local yesCorner = Instance.new("UICorner")
+yesCorner.CornerRadius = UDim.new(0, 8)
+yesCorner.Parent = confirmYes
+
+local confirmNo = Instance.new("TextButton")
+confirmNo.Name = "ConfirmNo"
+confirmNo.Parent = confipanel
+confirmNo.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+confirmNo.Size = UDim2.new(0, 100, 0, 35)
+confirmNo.Position = UDim2.new(0.5, 10, 1, -45)
+confirmNo.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+confirmNo.Text = "No"
+confirmNo.TextColor3 = Color3.fromRGB(255, 255, 255)
+confirmNo.TextSize = 18
+local noCorner = Instance.new("UICorner")
+noCorner.CornerRadius = UDim.new(0, 8)
+noCorner.Parent = confirmNo
+
+local rivalsToggleContainer = Instance.new("Frame")
+rivalsToggleContainer.Name = "RivalsToggleContainer"
+rivalsToggleContainer.Parent = frame
+rivalsToggleContainer.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+rivalsToggleContainer.BackgroundTransparency = 0.9
+rivalsToggleContainer.BorderColor3 = Color3.fromRGB(0, 0, 0)
+rivalsToggleContainer.BorderSizePixel = 0
+rivalsToggleContainer.Position = UDim2.new(0.60, 0, 0.53, 0)
+rivalsToggleContainer.Size = UDim2.new(0, 280, 0, 65)
+rivalsToggleContainer.Visible = false
+
+local containerStroke = Instance.new("UIStroke")
+containerStroke.Parent = rivalsToggleContainer
+containerStroke.Color = Color3.fromRGB(26, 29, 37)
+containerStroke.Thickness = 2
+containerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local uICornerContainer = Instance.new("UICorner")
+uICornerContainer.CornerRadius = UDim.new(0, 25)
+uICornerContainer.Parent = rivalsToggleContainer
+
+local autoloadToggle = Instance.new("Frame")
+autoloadToggle.Name = "AutoloadToggle"
+autoloadToggle.Parent = rivalsToggleContainer
+autoloadToggle.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+autoloadToggle.BackgroundTransparency = 0.9
+autoloadToggle.BorderColor3 = Color3.fromRGB(0, 0, 0)
+autoloadToggle.BorderSizePixel = 0
+autoloadToggle.Position = UDim2.new(0.05, 0, 0.15, 0)
+autoloadToggle.Size = UDim2.new(0, 120, 0, 45)
+
+local toggleStroke = Instance.new("UIStroke")
+toggleStroke.Parent = autoloadToggle
+toggleStroke.Color = Color3.fromRGB(26, 29, 37)
+toggleStroke.Thickness = 2
+toggleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local uICornerToggle = Instance.new("UICorner")
+uICornerToggle.CornerRadius = UDim.new(0, 15)
+uICornerToggle.Parent = autoloadToggle
+
+local toggleLabel = Instance.new("TextLabel")
+toggleLabel.Name = "ToggleLabel"
+toggleLabel.Parent = autoloadToggle
+toggleLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+toggleLabel.BackgroundTransparency = 1
+toggleLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+toggleLabel.BorderSizePixel = 0
+toggleLabel.Position = UDim2.new(0.05, 0, 0, 0)
+toggleLabel.Size = UDim2.new(0, 70, 0, 45)
+toggleLabel.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+toggleLabel.Text = "Autoload:"
+toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleLabel.TextSize = 16
+toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.Parent = autoloadToggle
+toggleButton.BackgroundColor3 = Color3.fromRGB(140, 155, 208)
+toggleButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
+toggleButton.BorderSizePixel = 0
+toggleButton.Position = UDim2.new(0.60, 0, 0.15, 0)
+toggleButton.Size = UDim2.new(0, 40, 0, 30)
+toggleButton.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+toggleButton.Text = "ON"
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.TextSize = 14
+toggleButton.TextWrapped = true
+
+local uICornerToggleBtn = Instance.new("UICorner")
+uICornerToggleBtn.CornerRadius = UDim.new(0, 10)
+uICornerToggleBtn.Parent = toggleButton
+
+local silentloadToggle = Instance.new("Frame")
+silentloadToggle.Name = "SilentloadToggle"
+silentloadToggle.Parent = rivalsToggleContainer
+silentloadToggle.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+silentloadToggle.BackgroundTransparency = 0.9
+silentloadToggle.BorderColor3 = Color3.fromRGB(0, 0, 0)
+silentloadToggle.BorderSizePixel = 0
+silentloadToggle.Position = UDim2.new(0.55, 0, 0.15, 0)
+silentloadToggle.Size = UDim2.new(0, 120, 0, 45)
+
+local silentloadStroke = Instance.new("UIStroke")
+silentloadStroke.Parent = silentloadToggle
+silentloadStroke.Color = Color3.fromRGB(26, 29, 37)
+silentloadStroke.Thickness = 2
+silentloadStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local uICornerSilentload = Instance.new("UICorner")
+uICornerSilentload.CornerRadius = UDim.new(0, 15)
+uICornerSilentload.Parent = silentloadToggle
+
+local silentloadLabel = Instance.new("TextLabel")
+silentloadLabel.Name = "SilentloadLabel"
+silentloadLabel.Parent = silentloadToggle
+silentloadLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+silentloadLabel.BackgroundTransparency = 1
+silentloadLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+silentloadLabel.BorderSizePixel = 0
+silentloadLabel.Position = UDim2.new(0.05, 0, 0, 0)
+silentloadLabel.Size = UDim2.new(0, 70, 0, 45)
+silentloadLabel.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+silentloadLabel.Text = "Silentload :"
+silentloadLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+silentloadLabel.TextSize = 16
+silentloadLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local silentloadButton = Instance.new("TextButton")
+silentloadButton.Name = "SilentloadButton"
+silentloadButton.Parent = silentloadToggle
+silentloadButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+silentloadButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
+silentloadButton.BorderSizePixel = 0
+silentloadButton.Position = UDim2.new(0.60, 0, 0.15, 0)
+silentloadButton.Size = UDim2.new(0, 40, 0, 30)
+silentloadButton.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+silentloadButton.Text = "OFF"
+silentloadButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+silentloadButton.TextSize = 14
+silentloadButton.TextWrapped = true
+
+local uICornerSilentloadBtn = Instance.new("UICorner")
+uICornerSilentloadBtn.CornerRadius = UDim.new(0, 10)
+uICornerSilentloadBtn.Parent = silentloadButton
+
+frame.Parent = z3USLoader
+
+local selectedOption = nil
+local selectedColor = Color3.fromRGB(140, 155, 208)
+local defaultColor = Color3.fromRGB(26, 29, 37)
+local autoloadEnabled = true
+local silentloadEnabled = false
+local version = "New"
+
+local VersionToggle = Instance.new("Frame")
+VersionToggle.Name = "VersionToggle"
+VersionToggle.Parent = frame
+VersionToggle.BackgroundColor3 = Color3.fromRGB(17, 18, 20)
+VersionToggle.BackgroundTransparency = 0.9
+VersionToggle.BorderColor3 = Color3.fromRGB(0, 0, 0)
+VersionToggle.BorderSizePixel = 0
+VersionToggle.Position = UDim2.new(0.60, 0, 0.53, 0)
+VersionToggle.Size = UDim2.new(0, 280, 0, 50)
+VersionToggle.Visible = false
+
+local versiontoggleStroke = Instance.new("UIStroke")
+versiontoggleStroke.Parent = VersionToggle
+versiontoggleStroke.Color = Color3.fromRGB(26, 29, 37)
+versiontoggleStroke.Thickness = 2
+versiontoggleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local uICornerversionToggle = Instance.new("UICorner")
+uICornerversionToggle.CornerRadius = UDim.new(0, 25)
+uICornerversionToggle.Parent = VersionToggle
+
+local versionLabel = Instance.new("TextLabel")
+versionLabel.Name = "versionLabel"
+versionLabel.Parent = VersionToggle
+versionLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+versionLabel.BackgroundTransparency = 1
+versionLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+versionLabel.BorderSizePixel = 0
+versionLabel.Position = UDim2.new(0.05, 0, 0, 0)
+versionLabel.Size = UDim2.new(0, 160, 0, 50)
+versionLabel.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+versionLabel.Text = "Version:"
+versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+versionLabel.TextSize = 20
+versionLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local versionButton = Instance.new("TextButton")
+versionButton.Name = "versionButton"
+versionButton.Parent = VersionToggle
+versionButton.BackgroundColor3 = Color3.fromRGB(140, 155, 208)
+versionButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
+versionButton.BorderSizePixel = 0
+versionButton.Position = UDim2.new(0.65, 0, 0.15, 0)
+versionButton.Size = UDim2.new(0, 80, 0, 35)
+versionButton.FontFace = Font.new("rbxasset://fonts/families/Nunito.json")
+versionButton.Text = "New"
+versionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+versionButton.TextSize = 18
+versionButton.TextWrapped = true
+
+local uICornerversionButton = Instance.new("UICorner")
+uICornerversionButton.CornerRadius = UDim.new(0, 15)
+uICornerversionButton.Parent = versionButton
+
+local function updateToggleAppearance()
+	if autoloadEnabled then
+		toggleButton.BackgroundColor3 = Color3.fromRGB(140, 155, 208)
+		toggleButton.Text = "ON"
 	else
-		vpart.Shape = Enum.PartType.Block
+		toggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+		toggleButton.Text = "OFF"
 	end
-
-	local ok = pcall(function()
-		vpart.Parent = workspace
-	end)
-	if not ok then
-		self.hmaid[id] = nil
-		return
-	end
-	vpart.Anchored = true
-	vpart.CanCollide = false
-	vpart.CanQuery = false
-	vpart.CanTouch = false
-	vpart.Material = Enum.Material.ForceField
-	vpart.CastShadow = false
-	vpart.Size = renderSize
-	vpart.CFrame = cframe
-	vpart.Color = color
-	vpart.Name = string.format("RW_Visualization_%i", id)
-	vpart.Transparency = Configuration.expectToggleValue("EnableVisualizations") and 0.2 or 1.0
-
-	if self.hmaid[id] then
-		return
-	end
-
-	self.hmaid[id] = vpart
-
-	debrisService:AddItem(vpart, MAX_VISUALIZATION_TIME)
-end)
-
----Run hitbox check. Returns wheter if the hitbox is being touched.
----@todo: An issue is that the player's current look vector will not be the same as when they attack due to a parry timing being seperate from the attack causing this check to fail.
----@param self Defender
----@param cframe CFrame
----@param fd boolean
----@param size Vector3
----@param filter Instance[]
----@param shape string?
----@return boolean?, CFrame?
-Defender.hitbox = LPH_NO_VIRTUALIZE(function(self, cframe, fd, size, filter, shape)
-	local shouldManualFilter = getexecutorname
-		and (getexecutorname():match("Solara") or getexecutorname():match("Xeno"))
-
-	local overlapParams = OverlapParams.new()
-	overlapParams.FilterDescendantsInstances = shouldManualFilter and {} or filter
-	overlapParams.FilterType = shouldManualFilter and Enum.RaycastFilterType.Exclude or Enum.RaycastFilterType.Include
-
-	local character = players.LocalPlayer.Character
-	if not character then
-		return nil, nil
-	end
-
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if not root then
-		return nil, nil
-	end
-
-	-- Used CFrame.
-	local usedCFrame = cframe
-
-	if fd then
-		usedCFrame = usedCFrame * CFrame.new(0, 0, -(size.Z / 2))
-	end
-
-	local parts = nil
-	local hitboxShape = shape == "Ball" and "Ball" or "Box"
-	if hitboxShape == "Ball" then
-		local radius = math.max(size.X, size.Y, size.Z) / 2
-		parts = workspace:GetPartBoundsInRadius(usedCFrame.Position, radius, overlapParams)
+	
+	if silentloadEnabled then
+		silentloadButton.BackgroundColor3 = Color3.fromRGB(140, 155, 208)
+		silentloadButton.Text = "ON"
 	else
-		-- Parts in bounds.
-		parts = workspace:GetPartBoundsInBox(usedCFrame, size, overlapParams)
+		silentloadButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+		silentloadButton.Text = "OFF"
 	end
 
-	-- Return result.
-	return shouldManualFilter and checkParts(parts, filter) or #parts > 0, usedCFrame
-end)
-
----Check initial state.
----@param self Defender
----@param from Model? | BasePart?
----@param pair TimingContainerPair
----@param name string
----@param key string
----@return Timing?
-Defender.initial = LPH_NO_VIRTUALIZE(function(self, from, pair, name, key)
-	-- Find timing.
-	local timing = pair:index(key)
-
-	-- Fetch distance.
-	local distance = self:distance(from)
-	if not distance then
-		return nil
+	if version == "New" then
+		versionButton.BackgroundColor3 = Color3.fromRGB(140, 155, 208)
+		versionButton.Text = "New"
+	else
+		versionButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+		versionButton.Text = "Old"
 	end
-
-	-- Check for distance; if we have a timing.
-	if timing and (distance < PP_SCRAMBLE_NUM(timing.imdd) or distance > PP_SCRAMBLE_NUM(timing.imxd)) then
-		return nil
-	end
-
-	-- Check for no timing. If so, let's log a miss.
-	---@note: Ignore return value.
-	if not timing then
-		self:miss(self.__type, key, name, distance, from and tostring(from.Parent) or nil)
-		return nil
-	end
-
-	-- Return timing.
-	return timing
-end)
-
----Logger notify.
----@param self Defender
----@param timing Timing
----@param str string
-Defender.notify = LPH_NO_VIRTUALIZE(function(self, timing, str, ...)
-	if not Configuration.expectToggleValue("EnableNotifications") then
-		return
-	end
-
-	Logger.notify("[%s] (%s) %s", PP_SCRAMBLE_STR(timing.name), self.__type, string.format(str, ...))
-end)
-
----@note: Perhaps one day, we can get better approximations for these.
---- These used to rely on GetNetworkPing which we assumed would be sending or atleast receiving delay.
---- That is incorrect, it is RakNet ping thereby being RTT.
-
-local function safePingSeconds()
-	local network = stats:FindFirstChild("Network")
-	if not network then
-		return 0
-	end
-
-	local serverStatsItem = network:FindFirstChild("ServerStatsItem")
-	if not serverStatsItem then
-		return 0
-	end
-
-	local dataPingItem = serverStatsItem:FindFirstChild("Data Ping")
-	if not dataPingItem then
-		return 0
-	end
-
-	local ok, value = pcall(function()
-		return dataPingItem:GetValue()
-	end)
-	if not ok or type(value) ~= "number" then
-		return 0
-	end
-
-	return value / 1000
 end
 
----Get receiving delay.
----@return number
-function Defender.rdelay()
-	return math.max(safePingSeconds() / 2, 0.0)
-end
+local function selectScript(scriptFrame, scriptName)
+	arsenalStroke.Color = defaultColor
+	planksStroke.Color = defaultColor
+	rivalsStroke.Color = defaultColor
+	counterbloxStroke.Color = defaultColor
+	universalStroke.Color = defaultColor
+	gunfightArenaStroke.Color = defaultColor
+	hypershotStroke.Color = defaultColor
 
----Get sending delay.
----@return number
-function Defender.sdelay()
-	return math.max(safePingSeconds() / 2, 0.0)
-end
+	rivalsToggleContainer.Visible = false
+	VersionToggle.Visible = false
 
----Get data ping.
----@note: https://devforum.roblox.com/t/in-depth-information-about-robloxs-remoteevents-instance-replication-and-physics-replication-w-sources/1847340
----@note: The forum post above is misleading, not only is it the RTT time, please note that this also takes into account all delays like frame time.
----@note: This is our round-trip time (e.g double the ping) since we have a receiving delay (replication) and a sending delay when we send the input to the server.
----@todo: For every usage, the sending delay needs to be continously updated. The receiving one must be calculated once at initial send for AP ping compensation.
----@return number
-function Defender.rtt()
-	return safePingSeconds()
-end
+	if scriptFrame then
+		scriptFrame:FindFirstChildOfClass("UIStroke").Color = selectedColor
+		selectedOption = scriptName
+		textLabel6.Text = scriptName
 
----Repeat conditional.
----@param self Defender
----@param info RepeatInfo
----@return boolean
-Defender.rc = LPH_NO_VIRTUALIZE(function(self, info)
-	if os.clock() - info.start >= MAX_REPEAT_WAIT then
-		return false
-	end
-
-	return true
-end)
-
----Handle delay until in hitbox.
----@param self Defender
----@param options HitboxOptions
----@param info RepeatInfo
----@return boolean
-Defender.duih = LPH_NO_VIRTUALIZE(function(self, options, info)
-	local clone = options:clone()
-	clone.hmid = self.hmaid:uid()
-
-	while task.wait() do
-		if not self:rc(info) then
-			return false
+		if scriptName == "Rivals" then
+			rivalsToggleContainer.Visible = true
+			updateToggleAppearance()
 		end
 
-		if not self:hc(clone, nil) then
-			continue
+		if scriptName == "Counterblox" then
+			VersionToggle.Visible = true
+			updateToggleAppearance()
 		end
+	else 
+		selectedOption = nil
+		textLabel6.Text = "No Script Selected"
+	end
+end
 
-		return true
+arsenal.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		selectScript(arsenal, "Arsenal")
 	end
 end)
 
----Handle hitbox check options.
----@param self Defender
----@param options HitboxOptions
----@param info RepeatInfo? Pass this in if you want to use the delay until in hitbox.
----@return boolean
-Defender.hc = LPH_NO_VIRTUALIZE(function(self, options, info)
-	local action = options.action
-	local timing = options.timing
-
-	-- Run basic validation.
-	local character = players.LocalPlayer.Character
-	if not character then
-		return false
+planks.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		selectScript(planks, "Planks")
 	end
+end)
 
-	if NO_HITBOX_ONLY then
-		return true
+hypershot.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		selectScript(hypershot, "Hypershot")
 	end
+end)
 
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if not root then
-		return false
+rivals.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		confipanel.Visible = true
+		blackidk.Visible = true
 	end
+end)
 
-	if action and action.ihbc then
-		return true
+confirmYes.MouseButton1Click:Connect(function()
+	confipanel.Visible = false
+	blackidk.Visible = false
+	selectScript(rivals, "Rivals")
+end)
+
+confirmNo.MouseButton1Click:Connect(function()
+	confipanel.Visible = false
+	blackidk.Visible = false
+end)
+
+counterblox.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		selectScript(counterblox, "Counterblox")
 	end
+end)
 
-	-- If we have info, then we want to delay until in hitbox.
-	if info then
-		return self:duih(options, info)
+gunfightArena.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		selectScript(gunfightArena, "Gunfight Arena")
 	end
+end)
 
-	-- Fetch the data that we need.
-	local hitbox = options:hitbox()
-	local shape = options:shape()
-	local position = options:pos()
+universal.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		selectScript(universal, "Universal")
+	end
+end)
 
-	-- Run hitbox check (cached per frame).
-	local cacheKey = hcKey and hcKey("base", options, position, hitbox, shape, timing, action) or nil
-	local cached = cacheKey and hcCache[cacheKey] or nil
-	local result, usedCFrame
-	if cached and cached.frame == hcCacheFrame then
-		result = cached.result
-		usedCFrame = cached.usedCFrame
-	else
-		result, usedCFrame = self:hitbox(position, timing.fhb, hitbox, options.filter, shape)
-		if cacheKey then
-			hcCache[cacheKey] = { frame = hcCacheFrame, result = result, usedCFrame = usedCFrame }
+toggleButton.MouseButton1Click:Connect(function()
+	autoloadEnabled = not autoloadEnabled
+	updateToggleAppearance()
+end)
+
+silentloadButton.MouseButton1Click:Connect(function()
+	silentloadEnabled = not silentloadEnabled
+	updateToggleAppearance()
+end)
+
+versionButton.MouseButton1Click:Connect(function()
+	version = if version == "Old" then "New" else "Old"
+	updateToggleAppearance()
+end)
+
+loadbtn.MouseButton1Click:Connect(function()
+	if selectedOption then
+		if selectedOption == "Arsenal" then
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/blackowl1231/Z3US/refs/heads/main/Games/Z3US%20Arsenal%20Beta.lua"))()
+		elseif selectedOption == "Planks" then
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/blackowl1231/Z3US/refs/heads/main/Games/Z3US%20Planks.lua"))()
+		elseif selectedOption == "Hypershot" then
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/blackowl1231/Z3US/refs/heads/main/Games/Z3US%20Hypershot.lua"))()
+		elseif selectedOption == "Rivals" then
+			repeat task.wait() until game:IsLoaded()
+			repeat task.wait() until game:GetService("Players").LocalPlayer and game:GetService("Players").LocalPlayer.Character
+			repeat task.wait() until not game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("LoadingScreen")
+			getgenv().autoload = autoloadEnabled
+			getgenv().silentload = silentloadEnabled
+			getgenv().SCRIPT_KEY = ""
+			loadstring(game:HttpGet("https://api.junkie-development.de/api/v1/luascripts/public/8be52e21a0145a401c446ca7ab2b5df9bd327ea80b0cf1d2fe99e442edd0f9c9/download"))()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/blackowl1231/Z3US/refs/heads/main/Games/Test.lua"))()
+		elseif selectedOption == "Counterblox" then
+			if version == "New" then
+				getgenv().SCRIPT_KEY = ""
+				loadstring(game:HttpGet("https://api.junkie-development.de/api/v1/luascripts/public/2438cfd42af811d55492e854318eeda24a73aa5d0b11a403ec1f7542abd8f2f0/download"))()
+			else
+				loadstring(game:HttpGet("https://raw.githubusercontent.com/blackowl1231/Z3US/refs/heads/main/Games/Z3US%20Counterblox.lua"))()
+			end
+		elseif selectedOption == "Gunfight Arena" then
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/blackowl1231/Z3US/refs/heads/main/Games/Z3US%20Gunfight%20Arena.lua"))()
+		elseif selectedOption == "Universal" then
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/blackowl1231/Z3US/refs/heads/main/Games/Z3US%20Universal.lua"))()
 		end
+	else
+		textLabel6.Text = "Please select a script!"
+		wait(2)
+		textLabel6.Text = "{Selected Script}"
 	end
+end)
 
-	if usedCFrame then
-		self:visualize(options.hmid, usedCFrame, hitbox, options:ghcolor(result), shape)
-		self:visualize(options.hmid and options.hmid + 1 or nil, root.CFrame, root.Size, options:ghcolor(result), "Box")
-	end
+closeButton.MouseButton1Click:Connect(function()
+	z3USLoader:Destroy()
+end)
 
-	if not options.spredict or result then
-		return result
-	end
-
-	-- Run prediction check.
-	local closest = PositionHistory.closest(players.LocalPlayer, tick() - (self.sdelay() * PREDICTION_LENIENCY_MULTI))
-	if not closest then
-		return false
-	end
-
-	local basePtime = options.ptime or 0
-	if basePtime <= 0 then
-		return false
-	end
-
-	local store = OriginalStore.new()
-	local extraSeconds = Configuration.expectOptionValue("Predicti... (671 KB left)
+updateToggleAppearance()
