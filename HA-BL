@@ -1,1331 +1,1113 @@
--- ============================================
--- Black hub - مع نظام مفاتيح مدمج
--- المفتاح المطلوب: B6778
--- ============================================
+--[[
+    SH Hub - Roblox UI Script
+    Tabs: نسخ (Copy) | تحكم (Control)
+]]
 
--- نظام المفاتيح - يظهر أولاً قبل تحميل أي شيء
-local function CreateKeySystem()
-    -- المفتاح الصحيح (تم تغييره إلى B6778)
-    local CorrectKey = "B6778"
-    local attempts = 0
-    local maxAttempts = 3
-    local keyVerified = false
-    
-    -- إنشاء واجهة المفتاح (شكل محسن)
-    local KeyGui = Instance.new("ScreenGui")
-    KeyGui.Name = "BlackHubKeySystem"
-    KeyGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    KeyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    
-    -- الإطار الرئيسي مع تدرج ألوان
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 420, 0, 280)
-    MainFrame.Position = UDim2.new(0.5, -210, 0.5, -140)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-    MainFrame.BorderSizePixel = 0
-    MainFrame.Parent = KeyGui
-    
-    -- تدرج خلفية
-    local Gradient = Instance.new("UIGradient")
-    Gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 20, 30)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(35, 25, 40)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 20, 30))
-    })
-    Gradient.Rotation = 45
-    Gradient.Parent = MainFrame
-    
-    -- زوايا مستديرة
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 15)
-    UICorner.Parent = MainFrame
-    
-    -- حد ملون
-    local UIStroke = Instance.new("UIStroke")
-    UIStroke.Color = Color3.fromRGB(200, 0, 50)
-    UIStroke.Thickness = 2
-    UIStroke.Transparency = 0.3
-    UIStroke.Parent = MainFrame
-    
-    -- شريط العنوان
-    local TitleBar = Instance.new("Frame")
-    TitleBar.Size = UDim2.new(1, 0, 0, 55)
-    TitleBar.Position = UDim2.new(0, 0, 0, 0)
-    TitleBar.BackgroundColor3 = Color3.fromRGB(200, 0, 50)
-    TitleBar.BackgroundTransparency = 0.1
-    TitleBar.Parent = MainFrame
-    
-    local TitleCorner = Instance.new("UICorner")
-    TitleCorner.CornerRadius = UDim.new(0, 15)
-    TitleCorner.Parent = TitleBar
-    
-    -- تدرج العنوان
-    local TitleGradient = Instance.new("UIGradient")
-    TitleGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(230, 30, 70)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 0, 40))
-    })
-    TitleGradient.Parent = TitleBar
-    
-    -- نص العنوان
-    local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, -20, 1, 0)
-    Title.Position = UDim2.new(0, 10, 0, 0)
-    Title.BackgroundTransparency = 1
-    Title.Font = Enum.Font.GothamBold
-    Title.Text = "🔒 BLACK HUB - نظام المفاتيح"
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.TextSize = 20
-    Title.TextXAlignment = Enum.TextXAlignment.Left
-    Title.Parent = TitleBar
-    
-    -- أيقونة محسنة (تم تغيير الأيقونة لشكل أكثر حداثة)
-    local Icon = Instance.new("ImageLabel")
-    Icon.Size = UDim2.new(0, 35, 0, 35)
-    Icon.Position = UDim2.new(1, -45, 0.5, -17.5)
-    Icon.BackgroundTransparency = 1
-    Icon.Image = "rbxassetid://6031090990" -- أيقونة أكثر حداثة
-    Icon.ImageColor3 = Color3.fromRGB(255, 255, 255)
-    Icon.Parent = TitleBar
-    
-    -- التعليمات
-    local Instructions = Instance.new("TextLabel")
-    Instructions.Size = UDim2.new(1, -40, 0, 45)
-    Instructions.Position = UDim2.new(0, 20, 0, 70)
-    Instructions.BackgroundTransparency = 1
-    Instructions.Font = Enum.Font.Gotham
-    Instructions.Text = "أدخل مفتاح التفعيل للمتابعة\nالمفتاح: "
-    Instructions.TextColor3 = Color3.fromRGB(200, 200, 220)
-    Instructions.TextSize = 15
-    Instructions.TextWrapped = true
-    Instructions.Parent = MainFrame
-    
-    -- حقل الإدخال مع تصميم محسن
-    local KeyBox = Instance.new("TextBox")
-    KeyBox.Size = UDim2.new(1, -40, 0, 45)
-    KeyBox.Position = UDim2.new(0, 20, 0, 125)
-    KeyBox.BackgroundColor3 = Color3.fromRGB(30, 25, 35)
-    KeyBox.Font = Enum.Font.Gotham
-    KeyBox.PlaceholderText = "أدخل المفتاح هنا..."
-    KeyBox.Text = ""
-    KeyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    KeyBox.TextSize = 18
-    KeyBox.Parent = MainFrame
-    
-    local BoxCorner = Instance.new("UICorner")
-    BoxCorner.CornerRadius = UDim.new(0, 10)
-    BoxCorner.Parent = KeyBox
-    
-    local BoxStroke = Instance.new("UIStroke")
-    BoxStroke.Color = Color3.fromRGB(200, 0, 50)
-    BoxStroke.Thickness = 1
-    BoxStroke.Transparency = 0.5
-    BoxStroke.Parent = KeyBox
-    
-    -- رسالة الحالة
-    local Status = Instance.new("TextLabel")
-    Status.Size = UDim2.new(1, -40, 0, 25)
-    Status.Position = UDim2.new(0, 20, 0, 175)
-    Status.BackgroundTransparency = 1
-    Status.Font = Enum.Font.Gotham
-    Status.Text = "⚡ جاهز لإدخال المفتاح"
-    Status.TextColor3 = Color3.fromRGB(180, 180, 200)
-    Status.TextSize = 13
-    Status.Parent = MainFrame
-    
-    -- زر الإرسال بتصميم محسن
-    local SubmitBtn = Instance.new("TextButton")
-    SubmitBtn.Size = UDim2.new(0, 150, 0, 45)
-    SubmitBtn.Position = UDim2.new(0.5, -75, 0, 210)
-    SubmitBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 50)
-    SubmitBtn.Font = Enum.Font.GothamBold
-    SubmitBtn.Text = "🔓 تفعيل"
-    SubmitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    SubmitBtn.TextSize = 18
-    SubmitBtn.AutoButtonColor = false
-    SubmitBtn.Parent = MainFrame
-    
-    local BtnCorner = Instance.new("UICorner")
-    BtnCorner.CornerRadius = UDim.new(0, 10)
-    BtnCorner.Parent = SubmitBtn
-    
-    local BtnStroke = Instance.new("UIStroke")
-    BtnStroke.Color = Color3.fromRGB(255, 255, 255)
-    BtnStroke.Thickness = 1
-    BtnStroke.Transparency = 0.5
-    BtnStroke.Parent = SubmitBtn
-    
-    -- تأثيرات حركية
-    local TweenService = game:GetService("TweenService")
-    
-    SubmitBtn.MouseEnter:Connect(function()
-        TweenService:Create(SubmitBtn, TweenInfo.new(0.2), {
-            BackgroundColor3 = Color3.fromRGB(230, 30, 70),
-            Size = UDim2.new(0, 160, 0, 50)
-        }):Play()
-    end)
-    
-    SubmitBtn.MouseLeave:Connect(function()
-        TweenService:Create(SubmitBtn, TweenInfo.new(0.2), {
-            BackgroundColor3 = Color3.fromRGB(200, 0, 50),
-            Size = UDim2.new(0, 150, 0, 45)
-        }):Play()
-    end)
-    
-    -- دالة التحقق من المفتاح
-    local function VerifyKey()
-        local enteredKey = KeyBox.Text
-        
-        if enteredKey == CorrectKey then
-            keyVerified = true
-            Status.Text = "✅ المفتاح صحيح! جاري التحميل..."
-            Status.TextColor3 = Color3.fromRGB(0, 255, 100)
-            
-            SubmitBtn.Text = "✅ تم"
-            
-            -- تأثير نجاح
-            TweenService:Create(MainFrame, TweenInfo.new(0.3), {
-                BackgroundColor3 = Color3.fromRGB(0, 50, 20)
-            }):Play()
-            
-            -- إغلاق واجهة المفتاح بعد تأخير قصير
-            task.wait(1.5)
-            KeyGui:Destroy()
-            return true
-        else
-            attempts = attempts + 1
-            local remaining = maxAttempts - attempts
-            
-            if remaining > 0 then
-                Status.Text = "❌ مفتاح خاطئ! المحاولات المتبقية: " .. remaining
-                Status.TextColor3 = Color3.fromRGB(255, 100, 100)
-                KeyBox.Text = ""
-                
-                -- تأثير خطأ
-                TweenService:Create(KeyBox, TweenInfo.new(0.1), {
-                    BackgroundColor3 = Color3.fromRGB(80, 20, 20)
-                }):Play()
-                task.wait(0.1)
-                TweenService:Create(KeyBox, TweenInfo.new(0.1), {
-                    BackgroundColor3 = Color3.fromRGB(30, 25, 35)
-                }):Play()
-            else
-                Status.Text = "⛔ تم حظر الوصول!"
-                Status.TextColor3 = Color3.fromRGB(255, 50, 50)
-                SubmitBtn.Text = "🚫 محظور"
-                SubmitBtn.Active = false
-                SubmitBtn.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
-                
-                TweenService:Create(MainFrame, TweenInfo.new(0.3), {
-                    BackgroundColor3 = Color3.fromRGB(50, 0, 0)
-                }):Play()
-            end
-            return false
-        end
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- helper: choose best parent for executor GUIs (Delta/Synapse/etc)
+local function getGuiParent()
+    local ok, hidden = pcall(function() return gethui() end)
+    if ok and hidden then return hidden end
+    local ok2, cg = pcall(function() return CoreGui end)
+    if ok2 and cg then return cg end
+    return PlayerGui
+end
+local guiParent = getGuiParent()
+
+-- cleanup old
+pcall(function()
+    for _, n in ipairs({"SHHub","SHMini","SHSplash"}) do
+        local old = guiParent:FindFirstChild(n)
+        if old then old:Destroy() end
+        local old2 = PlayerGui:FindFirstChild(n)
+        if old2 then old2:Destroy() end
     end
-    
-    -- أحداث الزر
-    SubmitBtn.MouseButton1Click:Connect(VerifyKey)
-    
-    KeyBox.FocusLost:Connect(function(enterPressed)
-        if enterPressed then
-            VerifyKey()
-        end
-    end)
-    
-    -- تأثير الظهور
-    MainFrame.Size = UDim2.new(0, 0, 0, 280)
-    MainFrame.Position = UDim2.new(0.5, 0, 0.5, -140)
-    
-    TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 420, 0, 280),
-        Position = UDim2.new(0.5, -210, 0.5, -140)
-    }):Play()
-    
-    -- إمكانية سحب النافذة
-    local dragging = false
-    local dragInput, dragStart, startPos
-    
-    TitleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = MainFrame.Position
-            
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-    
-    TitleBar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
-        end
-    end)
-    
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if dragging and input == dragInput then
-            local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-    
-    -- إغلاق عند ESC
-    local escConnection
-    escConnection = game:GetService("UserInputService").InputBegan:Connect(function(input)
-        if input.KeyCode == Enum.KeyCode.Escape then
-            escConnection:Disconnect()
-            if not keyVerified then
-                TweenService:Create(MainFrame, TweenInfo.new(0.3), {
-                    Size = UDim2.new(0, 0, 0, 280),
-                    Position = UDim2.new(0.5, 0, 0.5, -140)
-                }):Play()
-                task.wait(0.3)
-                KeyGui:Destroy()
-            end
-        end
-    end)
-    
-    -- الانتظار حتى يتم التحقق
-    repeat task.wait() until keyVerified or attempts >= maxAttempts
-    
-    return keyVerified
-end
-
--- التحقق من المفتاح قبل المتابعة
-if not CreateKeySystem() then
-    -- إذا فشل التحقق، إنهاء السكربت
-    return
-end
-
--- ============================================
--- إذا نجح التحقق، يبدأ تحميل سكربت Black hub الأصلي
--- ============================================
-
--- Black hub Script - نسخة محسنة
--- تم التعديل بواسطة: مطور Black hub
--- تاريخ التحديث: 2024
--- ============================================
-
--- تحميل المكتبة بطريقة آمنة مع معالجة الأخطاء
-local OrionLib = nil
-local success, errorMsg = pcall(function()
-    OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/jensonhirst/Orion/main/source'))()
 end)
 
-if not success or not OrionLib then
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "خطأ في التحميل",
-        Text = "فشل تحميل المكتبة، حاول مرة أخرى",
-        Duration = 5
-    })
-    return
-end
+----------------------------------------------------------------
+-- Loading splash: SH Zero Protocol (hacker intro)
+----------------------------------------------------------------
+local function runSplash()
+    local core = game:GetService("CoreGui")
 
--- ========== نظام الحماية المتقدم ==========
-local ProtectionSystem = {
-    Enabled = false,
-    AntiLogging = true,
-    AntiPing = true,
-    AntiRejoin = true,
-    PerformanceMode = true,
-    AntiHDAdmin = true  -- حماية جديدة ضد HD Admin
-}
+    if core:FindFirstChild("SH_ZeroProtocol") then core.SH_ZeroProtocol:Destroy() end
 
--- دالة حماية ضد HD Admin
-local function AntiHDAdminProtection()
-    if not ProtectionSystem.AntiHDAdmin then return end
-    
-    -- حماية متقدمة ضد HD Admin
-    local function BlockHDAdminCommands()
-        -- منع جميع أوامر HD Admin
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
-        local Players = game:GetService("Players")
-        local LocalPlayer = Players.LocalPlayer
-        
-        -- حماية ضد الأوامر المرسلة
-        local originalIndex; originalIndex = hookmetamethod(game, "__namecall", function(self, ...)
-            local method = getnamecallmethod()
-            local args = {...}
-            
-            -- منع أي أمر يحتوي على HD Admin
-            if tostring(self):find("HDAdmin") or 
-               (method == "FireServer" and tostring(self):find("Admin")) or
-               (method == "InvokeServer" and tostring(self):find("Admin")) then
-                return nil
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "SH_ZeroProtocol"
+    sg.DisplayOrder = 9999999
+    sg.IgnoreGuiInset = true
+    sg.Parent = core
+
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, 0, 1, 0)
+    bg.BackgroundColor3 = Color3.new(0, 0, 0)
+    bg.BorderSizePixel = 0
+    bg.Parent = sg
+
+    task.spawn(function()
+        -- [المرحلة 1: تشويه النظام] (0-15 ثانية)
+        for i = 1, 30 do
+            local line = Instance.new("Frame")
+            line.Size = UDim2.new(1, 0, 0, 1)
+            line.Position = UDim2.new(0, 0, math.random(0, 100)/100, 0)
+            line.BackgroundColor3 = Color3.fromRGB(170, 0, 255) -- أرجواني نيون
+            line.BackgroundTransparency = 0.5
+            line.BorderSizePixel = 0
+            line.Parent = sg
+            task.delay(0.2, function() line:Destroy() end)
+
+            if i % 5 == 0 then
+                local warn = Instance.new("TextLabel")
+                warn.Text = "DECRYPTING_SH_FILES..."
+                warn.TextColor3 = Color3.new(0, 1, 0)
+                warn.Font = Enum.Font.Code
+                warn.TextSize = 20
+                warn.BackgroundTransparency = 1
+                warn.Position = UDim2.new(math.random(1, 7)/10, 0, math.random(1, 7)/10, 0)
+                warn.Parent = sg
+                task.delay(0.5, function() warn:Destroy() end)
             end
-            
-            -- منع الرسائل المرتبطة بـ HD Admin
-            for _, arg in pairs(args) do
-                if type(arg) == "string" and arg:find("HDAdmin") then
-                    return nil
-                end
-            end
-            
-            return originalIndex(self, ...)
-        end)
-        
-        -- حماية ضد الأحداث
-        local function ProtectRemoteEvents()
-            for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
-                if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-                    if obj.Name:find("HDAdmin") or obj.Name:find("AdminCommand") then
-                        pcall(function()
-                            obj:Destroy()
-                        end)
-                    end
-                end
-            end
-        end
-        
-        -- مراقبة مستمرة
-        ReplicatedStorage.DescendantAdded:Connect(function(child)
-            if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") then
-                if child.Name:find("HDAdmin") or child.Name:find("AdminCommand") then
-                    task.wait(0.1)
-                    pcall(function()
-                        child:Destroy()
-                    end)
-                end
-            end
-        end)
-        
-        ProtectRemoteEvents()
-    end
-    
-    -- حماية ضد كشف السكربتات
-    local old; old = hookmetamethod(game, "__namecall", function(self, ...)
-        local method = getnamecallmethod()
-        if tostring(self):find("HDAdmin") and (method == "FireServer" or method == "InvokeServer") then
-            return nil
-        end
-        return old(self, ...)
-    end)
-    
-    -- حماية ضد عمليات المسح
-    for _, v in pairs(game:GetService("Players").LocalPlayer.PlayerGui:GetChildren()) do
-        if v.Name:find("HDAdmin") or v.Name:find("AntiCheat") or v.Name:find("Admin") then
-            v:Destroy()
-        end
-    end
-    
-    -- حماية لواجهة اللاعب
-    for _, v in pairs(game:GetService("Players"):GetPlayers()) do
-        if v ~= game.Players.LocalPlayer then
-            pcall(function()
-                if v.PlayerGui then
-                    for _, gui in pairs(v.PlayerGui:GetChildren()) do
-                        if gui.Name:find("HDAdmin") or gui.Name:find("Admin") then
-                            gui:Destroy()
-                        end
-                    end
-                end
-            end)
-        end
-    end
-    
-    -- مراقبة الإضافات الجديدة
-    game:GetService("Players").LocalPlayer.PlayerGui.ChildAdded:Connect(function(child)
-        if child.Name:find("HDAdmin") or child.Name:find("AntiCheat") or child.Name:find("Admin") then
             task.wait(0.1)
-            child:Destroy()
         end
+
+        -- [المرحلة 2: ظهور الهوية الرقمية] (15-30 ثانية)
+        local sh_id = Instance.new("TextLabel")
+        sh_id.Text = "ID: SH_REDACTED"
+        sh_id.TextColor3 = Color3.new(1, 1, 1)
+        sh_id.Font = Enum.Font.SpecialElite
+        sh_id.TextSize = 80
+        sh_id.BackgroundTransparency = 1
+        sh_id.Size = UDim2.new(1, 0, 0, 100)
+        sh_id.Position = UDim2.new(0, 0, 0.45, 0)
+        sh_id.Parent = sg
+
+        -- تأثير الاهتزاز الرقمي
+        for i = 1, 40 do
+            sh_id.Position = UDim2.new(0, math.random(-5, 5), 0.45, math.random(-5, 5))
+            sh_id.Rotation = math.random(-2, 2)
+            task.wait(0.05)
+        end
+        sh_id.Rotation = 0
+        sh_id.Text = "S H"
+        sh_id.TextSize = 150
+        sh_id.TextColor3 = Color3.fromRGB(0, 255, 150) -- أخضر مائي
+
+        -- [المرحلة 3: التثبيت والإنهاء] (30-40 ثانية)
+        local status = Instance.new("TextLabel")
+        status.Text = "ROOT_ACCESS_GRANTED"
+        status.TextColor3 = Color3.new(1, 1, 1)
+        status.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        status.Font = Enum.Font.Code
+        status.TextSize = 25
+        status.Size = UDim2.new(0, 300, 0, 40)
+        status.Position = UDim2.new(0.5, -150, 0.8, 0)
+        status.Parent = sg
+
+        task.wait(10)
+        sg:Destroy()
     end)
-    
-    -- تنفيذ الحماية المتقدمة
-    BlockHDAdminCommands()
-    
-    print("✅ تم تفعيل الحماية الكاملة ضد HD Admin وأوامره")
 end
+pcall(runSplash)
 
-local function EnableProtection()
-    if ProtectionSystem.Enabled then return end
-    
-    ProtectionSystem.Enabled = true
-    
-    -- حماية ضد الـ Logging
-    if ProtectionSystem.AntiLogging then
-        local originalPrint = print
-        print = function(...)
-            if not string.find(debug.traceback(), "OrionLib") then
-                originalPrint("[Protected]: " .. tostring(...))
-            end
-        end
-    end
-    
-    -- حماية ضد الـ Ping العالي
-    if ProtectionSystem.AntiPing then
-        game:GetService("NetworkClient").ChildAdded:Connect(function(child)
-            task.wait(0.1)
-        end)
-    end
-    
-    -- حماية ضد HD Admin
-    if ProtectionSystem.AntiHDAdmin then
-        AntiHDAdminProtection()
-    end
-    
-    -- تحسين الأداء
-    if ProtectionSystem.PerformanceMode then
-        settings().Rendering.QualityLevel = 1
-        game:GetService("Workspace").StreamingEnabled = true
-    end
-    
-    return true
-end
+----------------------------------------------------------------
+-- Main GUI
+----------------------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "SHHub"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; gui.DisplayOrder = 9000
+pcall(function() gui.Parent = guiParent end)
+if not gui.Parent then gui.Parent = PlayerGui end
 
-local function DisableProtection()
-    ProtectionSystem.Enabled = false
-    return true
-end
-
--- ========== نظام السرعة والنط المحسّن ==========
-local SpeedSystem = {
-    CurrentSpeed = 20,
-    MaxSpeed = 500,
-    MinSpeed = 20,
-    OriginalSpeed = 20
+local main = Instance.new("Frame", gui)
+main.Name = "Main"; main.AnchorPoint = Vector2.new(0.5, 0.5)
+main.Position = UDim2.new(0.5, 0, 0.5, 0); main.Size = UDim2.new(0, 520, 0, 360)
+main.BackgroundColor3 = Color3.fromRGB(6, 16, 9); main.BackgroundTransparency = 0.25
+main.BorderSizePixel = 0
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 14)
+local mStroke = Instance.new("UIStroke", main)
+mStroke.Color = Color3.fromRGB(0, 230, 110); mStroke.Thickness = 1.4; mStroke.Transparency = 0.25
+local mGradient = Instance.new("UIGradient", main)
+mGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 30, 16)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(4, 12, 7)),
 }
+mGradient.Rotation = 135
 
-local JumpSystem = {
-    CurrentPower = 50,
-    MaxPower = 500,
-    MinPower = 20,
-    OriginalPower = 50
+local glow = Instance.new("Frame", main)
+glow.BackgroundColor3 = Color3.fromRGB(0, 255, 130); glow.BorderSizePixel = 0
+glow.Size = UDim2.new(1, 0, 0, 2); glow.Position = UDim2.new(0, 0, 0, 44)
+local glowGrad = Instance.new("UIGradient", glow)
+glowGrad.Transparency = NumberSequence.new{
+    NumberSequenceKeypoint.new(0, 1),
+    NumberSequenceKeypoint.new(0.5, 0.2),
+    NumberSequenceKeypoint.new(1, 1),
 }
-
-local function ApplySpeed(value)
-    SpeedSystem.CurrentSpeed = math.clamp(value, SpeedSystem.MinSpeed, SpeedSystem.MaxSpeed)
-    local character = game.Players.LocalPlayer.Character
-    if character and character:FindFirstChild("Humanoid") then
-        character.Humanoid.WalkSpeed = SpeedSystem.CurrentSpeed
+task.spawn(function()
+    while glow.Parent do
+        glowGrad.Offset = Vector2.new(-1, 0)
+        TweenService:Create(glowGrad, TweenInfo.new(2.2, Enum.EasingStyle.Linear), {Offset = Vector2.new(1, 0)}):Play()
+        task.wait(2.2)
     end
-end
+end)
 
-local function ApplyJumpPower(value)
-    JumpSystem.CurrentPower = math.clamp(value, JumpSystem.MinPower, JumpSystem.MaxPower)
-    local character = game.Players.LocalPlayer.Character
-    if character and character:FindFirstChild("Humanoid") then
-        character.Humanoid.JumpPower = JumpSystem.CurrentPower
-    end
-end
+local title = Instance.new("TextLabel", main)
+title.BackgroundTransparency = 1
+title.Size = UDim2.new(1, -90, 0, 44); title.Position = UDim2.new(0, 16, 0, 0)
+title.Font = Enum.Font.GothamBlack; title.Text = "⬛ SH ⬛"
+title.TextSize = 22; title.TextColor3 = Color3.fromRGB(0, 255, 130)
+title.TextXAlignment = Enum.TextXAlignment.Left
 
--- ========== إنشاء النافذة الرئيسية ==========
-local Window = OrionLib:MakeWindow({
-    Name = "⚫ BLACK HUB v2.0",
-    HidePremium = false,
-    SaveConfig = true,
-    ConfigFolder = "BlackHubConfig",
-    IntroText = "BLACK HUB - مطور Black 🖤",
-    IntroIcon = "rbxassetid://4483345998"
-})
+----------------------------------------------------------------
+-- Top buttons (close X + minimize circle)
+----------------------------------------------------------------
+local closeBtn = Instance.new("TextButton", main)
+closeBtn.AnchorPoint = Vector2.new(1, 0)
+closeBtn.Position = UDim2.new(1, -8, 0, 8)
+closeBtn.Size = UDim2.new(0, 28, 0, 28)
+closeBtn.BackgroundColor3 = Color3.fromRGB(0, 60, 30)
+closeBtn.BackgroundTransparency = 0.3; closeBtn.BorderSizePixel = 0
+closeBtn.Text = "X"; closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextColor3 = Color3.fromRGB(180, 255, 200); closeBtn.TextSize = 16
+closeBtn.AutoButtonColor = false
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
+local closeStroke = Instance.new("UIStroke", closeBtn)
+closeStroke.Color = Color3.fromRGB(0, 200, 100); closeStroke.Transparency = 0.4
+closeBtn.MouseEnter:Connect(function() TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.1}):Play() end)
+closeBtn.MouseLeave:Connect(function() TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play() end)
 
--- ========== تبويب البداية ==========
-local StartTab = Window:MakeTab({
-    Name = "🏁 البداية",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
+-- circle minimize
+local minBtn = Instance.new("TextButton", main)
+minBtn.AnchorPoint = Vector2.new(1, 0)
+minBtn.Position = UDim2.new(1, -44, 0, 8)
+minBtn.Size = UDim2.new(0, 28, 0, 28)
+minBtn.BackgroundColor3 = Color3.fromRGB(0, 90, 45)
+minBtn.BackgroundTransparency = 0.2; minBtn.BorderSizePixel = 0
+minBtn.Text = ""; minBtn.AutoButtonColor = false
+Instance.new("UICorner", minBtn).CornerRadius = UDim.new(1, 0) -- full circle
+local minStroke = Instance.new("UIStroke", minBtn)
+minStroke.Color = Color3.fromRGB(0, 255, 130); minStroke.Transparency = 0.2; minStroke.Thickness = 1.4
+minBtn.MouseEnter:Connect(function() TweenService:Create(minBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play() end)
+minBtn.MouseLeave:Connect(function() TweenService:Create(minBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.2}):Play() end)
 
-StartTab:AddLabel("⚫ مرحباً في Black hub")
-StartTab:AddLabel("👤 المطور: مطور Black")
-StartTab:AddLabel("📅 الإصدار: 2.0 المحسّن")
-StartTab:AddLabel("🔑 المفتاح: B6778")
+----------------------------------------------------------------
+-- Floating mini circle (when hidden)
+----------------------------------------------------------------
+local miniGui = Instance.new("ScreenGui")
+miniGui.Name = "SHMini"; miniGui.ResetOnSpawn = false; miniGui.IgnoreGuiInset = true
+miniGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; miniGui.DisplayOrder = 9001
+pcall(function() miniGui.Parent = guiParent end)
+if not miniGui.Parent then miniGui.Parent = PlayerGui end
 
-StartTab:AddButton({
-    Name = "✅ تأكيد التحميل",
-    Callback = function()
-        OrionLib:MakeNotification({
-            Name = "التهيئة",
-            Content = "تم تحميل Black hub بنجاح!",
-            Image = "rbxassetid://4483345998",
-            Time = 3
-        })
-    end
-})
+local miniBubble = Instance.new("TextButton", miniGui)
+miniBubble.AnchorPoint = Vector2.new(0, 0.5)
+miniBubble.Position = UDim2.new(0, 16, 0.5, 0)
+miniBubble.Size = UDim2.new(0, 44, 0, 44)
+miniBubble.BackgroundColor3 = Color3.fromRGB(0, 110, 55)
+miniBubble.BackgroundTransparency = 0.15; miniBubble.BorderSizePixel = 0
+miniBubble.AutoButtonColor = false
+miniBubble.Text = "SH"
+miniBubble.Font = Enum.Font.GothamBlack
+miniBubble.TextSize = 14
+miniBubble.TextColor3 = Color3.fromRGB(230, 255, 240)
+miniBubble.Visible = false
+Instance.new("UICorner", miniBubble).CornerRadius = UDim.new(1, 0)
+local miniStroke = Instance.new("UIStroke", miniBubble)
+miniStroke.Color = Color3.fromRGB(0, 255, 130); miniStroke.Thickness = 1.6; miniStroke.Transparency = 0.2
 
-StartTab:AddParagraph("معلومات", "هذا السكربت مخصص لتقديم ميزات متعددة مع نظام حماية متطور")
-
--- ========== تبويب الشخصية ==========
-local CharacterTab = Window:MakeTab({
-    Name = "👤 الشخصية",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-CharacterTab:AddLabel("⚡ إعدادات السرعة")
-CharacterTab:AddSlider({
-    Name = "🏃‍♂️ السرعة",
-    Min = 30,
-    Max = 500,
-    Default = SpeedSystem.OriginalSpeed,
-    Color = Color3.fromRGB(0, 170, 255),
-    Increment = 5,
-    ValueName = "وحدة",
-    Callback = function(Value)
-        ApplySpeed(Value)
-        OrionLib:MakeNotification({
-            Name = "السرعة",
-            Content = "تم ضبط السرعة إلى: " .. Value,
-            Image = "rbxassetid://4483345998",
-            Time = 2
-        })
-    end
-})
-
-CharacterTab:AddSlider({
-    Name = "🦘 قوة النط",
-    Min = JumpSystem.MinPower,
-    Max = JumpSystem.MaxPower,
-    Default = JumpSystem.OriginalPower,
-    Color = Color3.fromRGB(255, 85, 0),
-    Increment = 5,
-    ValueName = "وحدة",
-    Callback = function(Value)
-        ApplyJumpPower(Value)
-        OrionLib:MakeNotification({
-            Name = "النط",
-            Content = "تم ضبط قوة النط إلى: " .. Value,
-            Image = "rbxassetid://4483345998",
-            Time = 2
-        })
-    end
-})
-
-CharacterTab:AddButton({
-    Name = "🔄 إعادة تعيين الإعدادات",
-    Callback = function()
-        ApplySpeed(SpeedSystem.OriginalSpeed)
-        ApplyJumpPower(JumpSystem.OriginalPower)
-        OrionLib:MakeNotification({
-            Name = "الإعدادات",
-            Content = "تم إعادة تعيين جميع الإعدادات",
-            Image = "rbxassetid://4483345998",
-            Time = 3
-        })
-    end
-})
-
--- ========== تبويب سكربتات رايد ==========
-local RideTab = Window:MakeTab({
-    Name = "🎮 سكربتات رايد",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-RideTab:AddLabel("🚀 سكربتات Ride المختلفة")
-
-RideTab:AddButton({
-    Name = "🔓 Ride بدون مفتاح",
-    Callback = function()
-        OrionLib:MakeNotification({
-            Name = "التنفيذ",
-            Content = "جاري تحميل سكربت Ride...",
-            Image = "rbxassetid://4483345998",
-            Time = 3
-        })
-        
-        task.wait(1)
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/.../ride_nokey.lua"))()
-    end
-})
-
-RideTab:AddButton({
-    Name = "⭐ Ride Premium",
-    Callback = function()
-        OrionLib:MakeNotification({
-            Name = "التنفيذ",
-            Content = "جاري تحميل سكربت Ride Premium...",
-            Image = "rbxassetid://4483345998",
-            Time = 3
-        })
-        
-        task.wait(1)
-        loadstring(game:HttpGet("https://pastefy.app/gM5bCh0J/raw"))()
-    end
-})
-
--- ========== تبويب السكربتات الأساسية ==========
-local ScriptsTab = Window:MakeTab({
-    Name = "📂 سكربتات أساسية",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-ScriptsTab:AddLabel("🔥 السكربتات الأكثر طلباً")
-
-ScriptsTab:AddButton({
-    Name = "💝 YA7 HUB Universal",
-    Callback = function()
-        OrionLib:MakeNotification({
-            Name = "YA7 HUB",
-            Content = "جاري التحميل...",
-            Image = "rbxassetid://4483345998",
-            Time = 3
-        })
-        
-        task.wait(1)
-        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-YA7-HUB-82220"))()
-    end
-})
-
-ScriptsTab:AddButton({
-    Name = "💬 شات فهلاوي سبامر",
-    Callback = function()
-        OrionLib:MakeNotification({
-            Name = "السبامر",
-            Content = "جاري التحميل...",
-            Image = "rbxassetid://4483345998",
-            Time = 3
-        })
-        
-        task.wait(1)
-        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-custom-Chat-spammer-85858"))()
-    end
-})
-
--- ========== تبويب الحماية المتقدم ==========
-local ProtectionTab = Window:MakeTab({
-    Name = "🛡️ نظام الحماية",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-ProtectionTab:AddLabel("🔒 نظام الحماية المتكامل")
-
-local protectionToggle = ProtectionTab:AddToggle({
-    Name = "تفعيل نظام الحماية",
-    Default = false,
-    Callback = function(Value)
-        if Value then
-            EnableProtection()
-            OrionLib:MakeNotification({
-                Name = "الحماية",
-                Content = "✅ تم تفعيل نظام الحماية المتقدم",
-                Image = "rbxassetid://4483345998",
-                Time = 4
-            })
+-- pulse
+task.spawn(function()
+    while miniGui.Parent do
+        if miniBubble.Visible then
+            TweenService:Create(miniStroke, TweenInfo.new(0.7), {Transparency = 0.7}):Play(); task.wait(0.7)
+            TweenService:Create(miniStroke, TweenInfo.new(0.7), {Transparency = 0.15}):Play(); task.wait(0.7)
         else
-            DisableProtection()
-            OrionLib:MakeNotification({
-                Name = "الحماية",
-                Content = "⛔ تم إيقاف نظام الحماية",
-                Image = "rbxassetid://4483345998",
-                Time = 4
-            })
+            task.wait(0.2)
         end
     end
-})
+end)
 
-ProtectionTab:AddToggle({
-    Name = "مكافحة Logging",
-    Default = true,
-    Callback = function(Value)
-        ProtectionSystem.AntiLogging = Value
+-- mini bubble stays ALWAYS visible. clicking it toggles the main panel.
+miniBubble.Visible = true
+
+local function setHidden(hidden)
+    if hidden then
+        TweenService:Create(main, TweenInfo.new(0.2), {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}):Play()
+        task.wait(0.22)
+        main.Visible = false
+        main.Size = UDim2.new(0, 520, 0, 360)
+        main.BackgroundTransparency = 0.25
+    else
+        main.Visible = true
+        main.Size = UDim2.new(0, 0, 0, 0)
+        main.BackgroundTransparency = 1
+        TweenService:Create(main, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 520, 0, 360), BackgroundTransparency = 0.25}):Play()
     end
-})
+end
 
-ProtectionTab:AddToggle({
-    Name = "مكافحة Ping العالي",
-    Default = true,
-    Callback = function(Value)
-        ProtectionSystem.AntiPing = Value
-    end
-})
+minBtn.MouseButton1Click:Connect(function() setHidden(true) end)
+miniBubble.MouseButton1Click:Connect(function()
+    setHidden(main.Visible)
+end)
 
-ProtectionTab:AddToggle({
-    Name = "حماية ضد HD Admin",
-    Default = true,
-    Callback = function(Value)
-        ProtectionSystem.AntiHDAdmin = Value
-        if Value and ProtectionSystem.Enabled then
-            AntiHDAdminProtection()
-            OrionLib:MakeNotification({
-                Name = "الحماية",
-                Content = "✅ تم تفعيل الحماية الكاملة ضد HD Admin",
-                Image = "rbxassetid://4483345998",
-                Time = 3
-            })
+closeBtn.MouseButton1Click:Connect(function()
+    TweenService:Create(main, TweenInfo.new(0.2), {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}):Play()
+    task.wait(0.22); gui:Destroy(); miniGui:Destroy()
+end)
+
+----------------------------------------------------------------
+-- Drag main + mini
+----------------------------------------------------------------
+local function makeDraggable(handle, target)
+    local dragging, dragStart, startPos
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; dragStart = input.Position; startPos = target.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
         end
-    end
-})
-
--- ========== تبويب سكربتات من صنعي ==========
-local MyScriptsTab = Window:MakeTab({
-    Name = "🌟 سكربتات من صنعي",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-MyScriptsTab:AddLabel("🔥 السكربتات المميزة")
-
-MyScriptsTab:AddButton({
-    Name = "🔥 سبام",
-    Callback = function()loadstring(game:HttpGet("https://pastebin.com/raw/FGtw8ZGc"))()
-        -- دالة السبام (موجودة مسبقاً في السكربت الأصلي)
-    end
-})
-
-MyScriptsTab:AddButton({
-    Name = "شيفت لوك ",
-    Callback = function()loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Final-Shiftlock-for-Mobile-2026-116372"))()
-        local protectionStatus = ProtectionSystem.Enabled and "✅ مفعل" or "❌ معطل"
-        OrionLib:MakeNotification({
-            Name = "نظام الشيفت",
-            Content = "🛡️ الحالة: " .. protectionStatus,
-            Image = "rbxassetid://4483345998",
-            Time = 7
-        })
-    end
-})
-
--- [[ الزر الجديد: Blakcop - نسخ متقدم ]] --
-MyScriptsTab:AddButton({
-    Name = "Blakcop - نسخ متقدم",
-    Callback = function()
-        -- إنشاء واجهة Blakcop
-        local BlakcopGUI = Instance.new("ScreenGui")
-        BlakcopGUI.Name = "Blakcop"
-        BlakcopGUI.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-        BlakcopGUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-        -- الإطار الرئيسي
-        local MainFrame = Instance.new("Frame")
-        MainFrame.Name = "MainFrame"
-        MainFrame.Size = UDim2.new(0, 650, 0, 550)
-        MainFrame.Position = UDim2.new(0.5, -325, 0.5, -275)
-        MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        MainFrame.BorderSizePixel = 0
-        MainFrame.Parent = BlakcopGUI
-
-        -- زوايا مستديرة وتأثيرات
-        local UICorner = Instance.new("UICorner")
-        UICorner.CornerRadius = UDim.new(0, 20)
-        UICorner.Parent = MainFrame
-
-        local UIStroke = Instance.new("UIStroke")
-        UIStroke.Color = Color3.fromRGB(255, 50, 100)
-        UIStroke.Thickness = 2
-        UIStroke.Transparency = 0.3
-        UIStroke.Parent = MainFrame
-
-        -- خلفية متدرجة
-        local Gradient = Instance.new("UIGradient")
-        Gradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 20, 40)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 10, 25))
-        })
-        Gradient.Rotation = 45
-        Gradient.Parent = MainFrame
-
-        -- شريط العنوان
-        local TitleBar = Instance.new("Frame")
-        TitleBar.Size = UDim2.new(1, 0, 0, 50)
-        TitleBar.BackgroundColor3 = Color3.fromRGB(255, 50, 100)
-        TitleBar.BackgroundTransparency = 0.2
-        TitleBar.Parent = MainFrame
-
-        local TitleCorner = Instance.new("UICorner")
-        TitleCorner.CornerRadius = UDim.new(0, 20)
-        TitleCorner.Parent = TitleBar
-
-        local TitleLabel = Instance.new("TextLabel")
-        TitleLabel.Size = UDim2.new(1, -20, 1, 0)
-        TitleLabel.Position = UDim2.new(0, 10, 0, 0)
-        TitleLabel.BackgroundTransparency = 1
-        TitleLabel.Font = Enum.Font.GothamBold
-        TitleLabel.Text = "⚡ Blakcop - النسخ المتقدم"
-        TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TitleLabel.TextSize = 22
-        TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-        TitleLabel.Parent = TitleBar
-
-        -- زر إغلاق
-        local CloseBtn = Instance.new("TextButton")
-        CloseBtn.Size = UDim2.new(0, 40, 0, 40)
-        CloseBtn.Position = UDim2.new(1, -50, 0.5, -20)
-        CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-        CloseBtn.Font = Enum.Font.GothamBold
-        CloseBtn.Text = "✕"
-        CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        CloseBtn.TextSize = 25
-        CloseBtn.Parent = TitleBar
-
-        local CloseCorner = Instance.new("UICorner")
-        CloseCorner.CornerRadius = UDim.new(0, 10)
-        CloseCorner.Parent = CloseBtn
-
-        CloseBtn.MouseButton1Click:Connect(function()
-            BlakcopGUI:Destroy()
-        end)
-
-        -- محتوى الواجهة (يتم ترتيبه عمودياً)
-        local ContentFrame = Instance.new("Frame")
-        ContentFrame.Size = UDim2.new(1, -40, 1, -80)
-        ContentFrame.Position = UDim2.new(0, 20, 0, 60)
-        ContentFrame.BackgroundTransparency = 1
-        ContentFrame.Parent = MainFrame
-
-        -- تخطيط عمودي
-        local UIListLayout = Instance.new("UIListLayout")
-        UIListLayout.Padding = UDim.new(0, 15)
-        UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        UIListLayout.Parent = ContentFrame
-
-        -- صف أفقي للاعبين والنوع
-        local Row1 = Instance.new("Frame")
-        Row1.Size = UDim2.new(1, 0, 0, 50)
-        Row1.BackgroundTransparency = 1
-        Row1.Parent = ContentFrame
-
-        local UIGrid = Instance.new("UIGridLayout")
-        UIGrid.FillDirection = Enum.FillDirection.Horizontal
-        UIGrid.HorizontalAlignment = Enum.HorizontalAlignment.Left
-        UIGrid.VerticalAlignment = Enum.VerticalAlignment.Center
-        UIGrid.CellSize = UDim2.new(0, 300, 0, 40)
-        UIGrid.CellPadding = UDim2.new(0, 10, 0, 0)
-        UIGrid.Parent = Row1
-
-        -- Dropdown اختيار اللاعبين
-        local PlayerDropdown = Instance.new("Frame")
-        PlayerDropdown.Size = UDim2.new(0, 300, 0, 40)
-        PlayerDropdown.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-        PlayerDropdown.Parent = Row1
-
-        local DropdownCorner = Instance.new("UICorner")
-        DropdownCorner.CornerRadius = UDim.new(0, 10)
-        DropdownCorner.Parent = PlayerDropdown
-
-        local PlayerList = {}
-        local function UpdatePlayerList()
-            PlayerList = {}
-            for _, plr in pairs(game.Players:GetPlayers()) do
-                table.insert(PlayerList, plr.Name)
-            end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            target.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
-        UpdatePlayerList()
+    end)
+end
+makeDraggable(title, main)
+makeDraggable(miniBubble, miniBubble)
 
-        local PlayerDropdownBtn = Instance.new("TextButton")
-        PlayerDropdownBtn.Size = UDim2.new(1, 0, 1, 0)
-        PlayerDropdownBtn.BackgroundTransparency = 1
-        PlayerDropdownBtn.Font = Enum.Font.Gotham
-        PlayerDropdownBtn.Text = "👤 اختر لاعب..."
-        PlayerDropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        PlayerDropdownBtn.TextSize = 16
-        PlayerDropdownBtn.Parent = PlayerDropdown
+----------------------------------------------------------------
+-- Tab bar
+----------------------------------------------------------------
+local tabBar = Instance.new("Frame", main)
+tabBar.BackgroundTransparency = 1
+tabBar.Position = UDim2.new(0, 16, 0, 56); tabBar.Size = UDim2.new(1, -32, 0, 36)
+local tabLayout = Instance.new("UIListLayout", tabBar)
+tabLayout.FillDirection = Enum.FillDirection.Horizontal; tabLayout.Padding = UDim.new(0, 8)
 
-        local selectedPlayer = nil
+local pages, tabButtons = {}, {}
 
-        -- إنشاء قائمة منسدلة مخصصة (سنستخدم ScrollingFrame)
-        local DropdownList = Instance.new("ScrollingFrame")
-        DropdownList.Size = UDim2.new(1, 0, 0, 150)
-        DropdownList.Position = UDim2.new(0, 0, 1, 5)
-        DropdownList.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-        DropdownList.BorderSizePixel = 0
-        DropdownList.Visible = false
-        DropdownList.Parent = PlayerDropdown
-        DropdownList.CanvasSize = UDim2.new(0, 0, 0, 0)
+local function makeTab(name)
+    local btn = Instance.new("TextButton", tabBar)
+    btn.Size = UDim2.new(0, 130, 1, 0); btn.BackgroundColor3 = Color3.fromRGB(8, 30, 14)
+    btn.BackgroundTransparency = 0.4; btn.BorderSizePixel = 0; btn.AutoButtonColor = false
+    btn.Font = Enum.Font.GothamBold; btn.Text = name; btn.TextSize = 15
+    btn.TextColor3 = Color3.fromRGB(160, 230, 180)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
+    local s = Instance.new("UIStroke", btn); s.Color = Color3.fromRGB(0, 200, 100); s.Transparency = 0.6
 
-        local DropdownListCorner = Instance.new("UICorner")
-        DropdownListCorner.CornerRadius = UDim.new(0, 10)
-        DropdownListCorner.Parent = DropdownList
+    local page = Instance.new("Frame", main)
+    page.Position = UDim2.new(0, 16, 0, 100); page.Size = UDim2.new(1, -32, 1, -116)
+    page.BackgroundColor3 = Color3.fromRGB(4, 12, 7); page.BackgroundTransparency = 0.4
+    page.BorderSizePixel = 0; page.Visible = false
+    Instance.new("UICorner", page).CornerRadius = UDim.new(0, 10)
+    local ps = Instance.new("UIStroke", page); ps.Color = Color3.fromRGB(0, 180, 90); ps.Transparency = 0.7
 
-        local function PopulateDropdown()
-            for _, child in pairs(DropdownList:GetChildren()) do
-                if child:IsA("TextButton") then child:Destroy() end
-            end
-            UpdatePlayerList()
-            local ySize = 0
-            for i, name in ipairs(PlayerList) do
-                local btn = Instance.new("TextButton")
-                btn.Size = UDim2.new(1, 0, 0, 30)
-                btn.Position = UDim2.new(0, 0, 0, ySize)
-                btn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-                btn.Font = Enum.Font.Gotham
-                btn.Text = name
-                btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-                btn.TextSize = 14
-                btn.Parent = DropdownList
-                ySize = ySize + 30
-
-                btn.MouseButton1Click:Connect(function()
-                    selectedPlayer = name
-                    PlayerDropdownBtn.Text = "👤 " .. name
-                    DropdownList.Visible = false
-                end)
-            end
-            DropdownList.CanvasSize = UDim2.new(0, 0, 0, ySize)
-        end
-
-        PlayerDropdownBtn.MouseButton1Click:Connect(function()
-            PopulateDropdown()
-            DropdownList.Visible = not DropdownList.Visible
-        end)
-
-        -- اختيار نوع النسخ (عادي / وهمي)
-        local TypeFrame = Instance.new("Frame")
-        TypeFrame.Size = UDim2.new(0, 300, 0, 40)
-        TypeFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-        TypeFrame.Parent = Row1
-
-        local TypeCorner = Instance.new("UICorner")
-        TypeCorner.CornerRadius = UDim.new(0, 10)
-        TypeCorner.Parent = TypeFrame
-
-        local TypeDropdownBtn = Instance.new("TextButton")
-        TypeDropdownBtn.Size = UDim2.new(1, 0, 1, 0)
-        TypeDropdownBtn.BackgroundTransparency = 1
-        TypeDropdownBtn.Font = Enum.Font.Gotham
-        TypeDropdownBtn.Text = "🔤 النوع: عادي"
-        TypeDropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TypeDropdownBtn.TextSize = 16
-        TypeDropdownBtn.Parent = TypeFrame
-
-        local TypeList = Instance.new("ScrollingFrame")
-        TypeList.Size = UDim2.new(1, 0, 0, 80)
-        TypeList.Position = UDim2.new(0, 0, 1, 5)
-        TypeList.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-        TypeList.BorderSizePixel = 0
-        TypeList.Visible = false
-        TypeList.Parent = TypeFrame
-        TypeList.CanvasSize = UDim2.new(0, 0, 0, 60)
-
-        local TypeListCorner = Instance.new("UICorner")
-        TypeListCorner.CornerRadius = UDim.new(0, 10)
-        TypeListCorner.Parent = TypeList
-
-        local mode = "normal" -- normal or full
-
-        local normalBtn = Instance.new("TextButton")
-        normalBtn.Size = UDim2.new(1, 0, 0, 30)
-        normalBtn.Position = UDim2.new(0, 0, 0, 0)
-        normalBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        normalBtn.Font = Enum.Font.Gotham
-        normalBtn.Text = "عادي (3 أحرف)"
-        normalBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        normalBtn.TextSize = 14
-        normalBtn.Parent = TypeList
-
-        normalBtn.MouseButton1Click:Connect(function()
-            mode = "normal"
-            TypeDropdownBtn.Text = "🔤 النوع: عادي"
-            TypeList.Visible = false
-        end)
-
-        local fullBtn = Instance.new("TextButton")
-        fullBtn.Size = UDim2.new(1, 0, 0, 30)
-        fullBtn.Position = UDim2.new(0, 0, 0, 30)
-        fullBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        fullBtn.Font = Enum.Font.Gotham
-        fullBtn.Text = "وهمي (الاسم كامل)"
-        fullBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        fullBtn.TextSize = 14
-        fullBtn.Parent = TypeList
-
-        fullBtn.MouseButton1Click:Connect(function()
-            mode = "full"
-            TypeDropdownBtn.Text = "🔤 النوع: وهمي"
-            TypeList.Visible = false
-        end)
-
-        TypeDropdownBtn.MouseButton1Click:Connect(function()
-            TypeList.Visible = not TypeList.Visible
-        end)
-
-        -- مربع النص القابل للتعديل
-        local TextBoxFrame = Instance.new("Frame")
-        TextBoxFrame.Size = UDim2.new(1, 0, 0, 150)
-        TextBoxFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-        TextBoxFrame.Parent = ContentFrame
-
-        local TextBoxCorner = Instance.new("UICorner")
-        TextBoxCorner.CornerRadius = UDim.new(0, 15)
-        TextBoxCorner.Parent = TextBoxFrame
-
-        local TextBox = Instance.new("TextBox")
-        TextBox.Size = UDim2.new(1, -20, 1, -20)
-        TextBox.Position = UDim2.new(0, 10, 0, 10)
-        TextBox.BackgroundTransparency = 1
-        TextBox.Font = Enum.Font.Code
-        TextBox.Text = "@logs bo @clogs bo @nv bo @re bo\n@logs bo @clogs bo @nv bo @re bo\n@logs bo @clogs bo @nv bo @re bo\n@logs bo @clogs bo @nv bo @re bo\n@logs bo @clogs bo @nv bo @re bo"
-        TextBox.TextColor3 = Color3.fromRGB(220, 220, 220)
-        TextBox.TextSize = 14
-        TextBox.TextWrapped = true
-        TextBox.TextXAlignment = Enum.TextXAlignment.Left
-        TextBox.TextYAlignment = Enum.TextYAlignment.Top
-        TextBox.MultiLine = true
-        TextBox.ClearTextOnFocus = false
-        TextBox.Parent = TextBoxFrame
-
-        -- إعدادات السرعة و RemoteEvent
-        local Row2 = Instance.new("Frame")
-        Row2.Size = UDim2.new(1, 0, 0, 40)
-        Row2.BackgroundTransparency = 1
-        Row2.Parent = ContentFrame
-
-        local UIGrid2 = Instance.new("UIGridLayout")
-        UIGrid2.FillDirection = Enum.FillDirection.Horizontal
-        UIGrid2.HorizontalAlignment = Enum.HorizontalAlignment.Left
-        UIGrid2.VerticalAlignment = Enum.VerticalAlignment.Center
-        UIGrid2.CellSize = UDim2.new(0, 200, 0, 40)
-        UIGrid2.CellPadding = UDim2.new(0, 10, 0, 0)
-        UIGrid2.Parent = Row2
-
-        -- سرعة السبام
-        local SpeedFrame = Instance.new("Frame")
-        SpeedFrame.Size = UDim2.new(0, 200, 0, 40)
-        SpeedFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-        SpeedFrame.Parent = Row2
-
-        local SpeedCorner = Instance.new("UICorner")
-        SpeedCorner.CornerRadius = UDim.new(0, 10)
-        SpeedCorner.Parent = SpeedFrame
-
-        local SpeedLabel = Instance.new("TextLabel")
-        SpeedLabel.Size = UDim2.new(0, 60, 1, 0)
-        SpeedLabel.BackgroundTransparency = 1
-        SpeedLabel.Font = Enum.Font.Gotham
-        SpeedLabel.Text = "سرعة:"
-        SpeedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        SpeedLabel.TextSize = 16
-        SpeedLabel.Parent = SpeedFrame
-
-        local SpeedBox = Instance.new("TextBox")
-        SpeedBox.Size = UDim2.new(0, 80, 1, 0)
-        SpeedBox.Position = UDim2.new(0, 60, 0, 0)
-        SpeedBox.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-        SpeedBox.Font = Enum.Font.Gotham
-        SpeedBox.Text = "0.5"
-        SpeedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-        SpeedBox.TextSize = 16
-        SpeedBox.Parent = SpeedFrame
-
-        local SpeedBoxCorner = Instance.new("UICorner")
-        SpeedBoxCorner.CornerRadius = UDim.new(0, 8)
-        SpeedBoxCorner.Parent = SpeedBox
-
-        local SpeedUnit = Instance.new("TextLabel")
-        SpeedUnit.Size = UDim2.new(0, 40, 1, 0)
-        SpeedUnit.Position = UDim2.new(0, 140, 0, 0)
-        SpeedUnit.BackgroundTransparency = 1
-        SpeedUnit.Font = Enum.Font.Gotham
-        SpeedUnit.Text = "ث"
-        SpeedUnit.TextColor3 = Color3.fromRGB(200, 200, 200)
-        SpeedUnit.TextSize = 14
-        SpeedUnit.Parent = SpeedFrame
-
-        -- اسم الـ RemoteEvent
-        local RemoteFrame = Instance.new("Frame")
-        RemoteFrame.Size = UDim2.new(0, 250, 0, 40)
-        RemoteFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-        RemoteFrame.Parent = Row2
-
-        local RemoteCorner = Instance.new("UICorner")
-        RemoteCorner.CornerRadius = UDim.new(0, 10)
-        RemoteCorner.Parent = RemoteFrame
-
-        local RemoteLabel = Instance.new("TextLabel")
-        RemoteLabel.Size = UDim2.new(0, 70, 1, 0)
-        RemoteLabel.BackgroundTransparency = 1
-        RemoteLabel.Font = Enum.Font.Gotham
-        RemoteLabel.Text = "Remote:"
-        RemoteLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        RemoteLabel.TextSize = 14
-        RemoteLabel.Parent = RemoteFrame
-
-        local RemoteBox = Instance.new("TextBox")
-        RemoteBox.Size = UDim2.new(1, -80, 1, 0)
-        RemoteBox.Position = UDim2.new(0, 70, 0, 0)
-        RemoteBox.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-        RemoteBox.Font = Enum.Font.Gotham
-        RemoteBox.Text = "SayMessageRequest"
-        RemoteBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-        RemoteBox.TextSize = 14
-        RemoteBox.Parent = RemoteFrame
-
-        local RemoteBoxCorner = Instance.new("UICorner")
-        RemoteBoxCorner.CornerRadius = UDim.new(0, 8)
-        RemoteBoxCorner.Parent = RemoteBox
-
-        -- أزرار التحكم
-        local Row3 = Instance.new("Frame")
-        Row3.Size = UDim2.new(1, 0, 0, 50)
-        Row3.BackgroundTransparency = 1
-        Row3.Parent = ContentFrame
-
-        local UIGrid3 = Instance.new("UIGridLayout")
-        UIGrid3.FillDirection = Enum.FillDirection.Horizontal
-        UIGrid3.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        UIGrid3.VerticalAlignment = Enum.VerticalAlignment.Center
-        UIGrid3.CellSize = UDim2.new(0, 120, 0, 45)
-        UIGrid3.CellPadding = UDim2.new(0, 15, 0, 0)
-        UIGrid3.Parent = Row3
-
-        -- زر تشغيل/إيقاف
-        local ToggleBtn = Instance.new("TextButton")
-        ToggleBtn.Size = UDim2.new(0, 120, 0, 45)
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-        ToggleBtn.Font = Enum.Font.GothamBold
-        ToggleBtn.Text = "▶ تشغيل"
-        ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        ToggleBtn.TextSize = 18
-        ToggleBtn.Parent = Row3
-
-        local ToggleCorner = Instance.new("UICorner")
-        ToggleCorner.CornerRadius = UDim.new(0, 12)
-        ToggleCorner.Parent = ToggleBtn
-
-        -- زر إيقاف (هو نفسه زر التشغيل بعد الضغط)
-        -- زر إغلاق (موجود بالفعل في شريط العنوان، لكن نضيف زر إغلاق آخر)
-        local CloseBtn2 = Instance.new("TextButton")
-        CloseBtn2.Size = UDim2.new(0, 120, 0, 45)
-        CloseBtn2.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-        CloseBtn2.Font = Enum.Font.GothamBold
-        CloseBtn2.Text = "🔒 إغلاق"
-        CloseBtn2.TextColor3 = Color3.fromRGB(255, 255, 255)
-        CloseBtn2.TextSize = 18
-        CloseBtn2.Parent = Row3
-
-        local CloseCorner2 = Instance.new("UICorner")
-        CloseCorner2.CornerRadius = UDim.new(0, 12)
-        CloseCorner2.Parent = CloseBtn2
-
-        CloseBtn2.MouseButton1Click:Connect(function()
-            BlakcopGUI:Destroy()
-        end)
-
-        -- متغيرات التحكم في السبام
-        local spamming = false
-        local spamConnection = nil
-
-        -- دالة الحصول على اسم اللاعب حسب النوع
-        local function GetPlayerNameForMode(plrName)
-            if mode == "normal" then
-                return plrName:sub(1, 3) -- أول 3 أحرف
+    pages[name] = page; tabButtons[name] = btn
+    btn.MouseButton1Click:Connect(function()
+        for n, p in pairs(pages) do p.Visible = (n == name) end
+        for n, b in pairs(tabButtons) do
+            if n == name then
+                TweenService:Create(b, TweenInfo.new(0.15), {BackgroundTransparency = 0.1, TextColor3 = Color3.fromRGB(0, 255, 130)}):Play()
             else
-                return plrName -- الاسم كامل
+                TweenService:Create(b, TweenInfo.new(0.15), {BackgroundTransparency = 0.4, TextColor3 = Color3.fromRGB(160, 230, 180)}):Play()
             end
         end
+    end)
+    return page, btn
+end
 
-        -- دالة السبام
-        local function StartSpamming()
-            if not selectedPlayer then
-                OrionLib:MakeNotification({
-                    Name = "خطأ",
-                    Content = "الرجاء اختيار لاعب أولاً",
-                    Time = 3
-                })
-                return
+local copyPage    = makeTab("نسخ")
+local controlPage = makeTab("تحكم")
+
+----------------------------------------------------------------
+-- Page: نسخ
+----------------------------------------------------------------
+local selectedName = nil
+
+local playersBar = Instance.new("ScrollingFrame", copyPage)
+playersBar.Position = UDim2.new(0, 10, 0, 10); playersBar.Size = UDim2.new(1, -20, 0, 46)
+playersBar.BackgroundColor3 = Color3.fromRGB(2, 10, 5); playersBar.BackgroundTransparency = 0.5
+playersBar.BorderSizePixel = 0; playersBar.ScrollBarThickness = 3
+playersBar.ScrollingDirection = Enum.ScrollingDirection.X
+playersBar.AutomaticCanvasSize = Enum.AutomaticSize.X
+playersBar.CanvasSize = UDim2.new(0, 0, 0, 0)
+playersBar.ScrollBarImageColor3 = Color3.fromRGB(0, 255, 130)
+Instance.new("UICorner", playersBar).CornerRadius = UDim.new(0, 8)
+local pbLayout = Instance.new("UIListLayout", playersBar)
+pbLayout.FillDirection = Enum.FillDirection.Horizontal; pbLayout.Padding = UDim.new(0, 6)
+pbLayout.SortOrder = Enum.SortOrder.LayoutOrder; pbLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+local pbPad = Instance.new("UIPadding", playersBar)
+pbPad.PaddingLeft = UDim.new(0, 8); pbPad.PaddingRight = UDim.new(0, 8)
+
+local selectedLabel = Instance.new("TextLabel", copyPage)
+selectedLabel.BackgroundTransparency = 1
+selectedLabel.Position = UDim2.new(0, 10, 0, 60); selectedLabel.Size = UDim2.new(1, -20, 0, 20)
+selectedLabel.Font = Enum.Font.GothamSemibold; selectedLabel.TextSize = 13
+selectedLabel.TextColor3 = Color3.fromRGB(180, 255, 200)
+selectedLabel.TextXAlignment = Enum.TextXAlignment.Left
+selectedLabel.Text = "اختر لاعب من القائمة"
+
+local playerChips = {}
+local function refreshPlayers()
+    for _, c in ipairs(playersBar:GetChildren()) do
+        if c:IsA("TextButton") then c:Destroy() end
+    end
+    playerChips = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            local chip = Instance.new("TextButton", playersBar)
+            chip.Size = UDim2.new(0, 0, 1, -8); chip.AutomaticSize = Enum.AutomaticSize.X
+            chip.BackgroundColor3 = Color3.fromRGB(10, 35, 18); chip.BackgroundTransparency = 0.2
+            chip.BorderSizePixel = 0; chip.AutoButtonColor = false
+            chip.Font = Enum.Font.GothamBold; chip.Text = "  " .. p.Name .. "  "
+            chip.TextSize = 13; chip.TextColor3 = Color3.fromRGB(200, 255, 215)
+            Instance.new("UICorner", chip).CornerRadius = UDim.new(0, 8)
+            local cs = Instance.new("UIStroke", chip); cs.Color = Color3.fromRGB(0, 200, 100); cs.Transparency = 0.5
+            chip.MouseButton1Click:Connect(function()
+                selectedName = p.Name
+                selectedLabel.Text = "تم اختيار: " .. p.Name
+                for _, ch in pairs(playerChips) do
+                    TweenService:Create(ch, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(10, 35, 18)}):Play()
+                end
+                TweenService:Create(chip, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(0, 120, 60)}):Play()
+            end)
+            chip.MouseEnter:Connect(function()
+                if selectedName ~= p.Name then
+                    TweenService:Create(chip, TweenInfo.new(0.12), {BackgroundTransparency = 0.05}):Play()
+                end
+            end)
+            chip.MouseLeave:Connect(function()
+                if selectedName ~= p.Name then
+                    TweenService:Create(chip, TweenInfo.new(0.12), {BackgroundTransparency = 0.2}):Play()
+                end
+            end)
+            playerChips[p.Name] = chip
+        end
+    end
+end
+refreshPlayers()
+Players.PlayerAdded:Connect(refreshPlayers)
+Players.PlayerRemoving:Connect(refreshPlayers)
+
+local function makeBigBtn(parent, text, posY, color1, color2)
+    color1 = color1 or Color3.fromRGB(0, 150, 75)
+    color2 = color2 or Color3.fromRGB(0, 90, 45)
+    local b = Instance.new("TextButton", parent)
+    b.Position = UDim2.new(0, 10, 0, posY); b.Size = UDim2.new(1, -20, 0, 46)
+    b.BackgroundColor3 = Color3.fromRGB(0, 110, 55); b.BackgroundTransparency = 0.15
+    b.BorderSizePixel = 0; b.AutoButtonColor = false
+    b.Font = Enum.Font.GothamBlack; b.Text = text; b.TextSize = 16
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
+    local s = Instance.new("UIStroke", b); s.Color = Color3.fromRGB(0, 255, 130); s.Transparency = 0.3
+    local g = Instance.new("UIGradient", b)
+    g.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, color1),
+        ColorSequenceKeypoint.new(1, color2),
+    }
+    g.Rotation = 90
+    b.MouseEnter:Connect(function() TweenService:Create(b, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play() end)
+    b.MouseLeave:Connect(function() TweenService:Create(b, TweenInfo.new(0.15), {BackgroundTransparency = 0.15}):Play() end)
+    return b
+end
+
+local copySpamBtn   = makeBigBtn(copyPage, "نسخ سبام", 88)
+local copyStrongBtn = makeBigBtn(copyPage, "نسخ قوي سبام", 142)
+local stopBtn       = makeBigBtn(copyPage, "إيقاف السبام", 196,
+    Color3.fromRGB(170, 30, 30), Color3.fromRGB(110, 15, 15))
+
+local statusLbl = Instance.new("TextLabel", copyPage)
+statusLbl.BackgroundTransparency = 1
+statusLbl.Position = UDim2.new(0, 10, 1, -28); statusLbl.Size = UDim2.new(1, -20, 0, 22)
+statusLbl.Font = Enum.Font.GothamSemibold; statusLbl.TextSize = 13
+statusLbl.TextColor3 = Color3.fromRGB(150, 220, 170); statusLbl.Text = ""
+
+local function setStatus(txt, persistent)
+    statusLbl.Text = txt; statusLbl.TextTransparency = 0
+    if not persistent then
+        task.delay(2.5, function()
+            if statusLbl.Text == txt then
+                TweenService:Create(statusLbl, TweenInfo.new(0.6), {TextTransparency = 1}):Play()
             end
+        end)
+    end
+end
 
-            local remoteName = RemoteBox.Text
-            local remote = game:GetService("ReplicatedStorage"):FindFirstChild(remoteName)
-            if not remote then
-                -- بحث في أماكن أخرى
-                remote = game:GetService("ReplicatedStorage"):FindFirstChild(remoteName, true)
+-- Build single-message spam strings
+local function buildSpamA(name)
+    local block = string.format(";logs %s ;clogs %s ;nv %s ;re %s ;res %s",
+        name, name, name, name, name)
+    local parts = {}
+    for i = 1, 5 do parts[i] = block end
+    return table.concat(parts, " ")
+end
+
+local function buildSpamB(name)
+    local cmds = {
+        ";apparate %s inf",";fling %s",";jp %s inf",";jc %s",
+        ";ice %s",";emotes %s",";phase %s",";cmdbar %s",
+        ";nv %s",";jump %s",";re %s",";res %s",";kill %s",";ping %s",
+    }
+    local out = {}
+    for i, fmt in ipairs(cmds) do out[i] = string.format(fmt, name) end
+    return table.concat(out, " ")
+end
+
+----------------------------------------------------------------
+-- Remotes
+----------------------------------------------------------------
+local chatRemote, hdRemote
+pcall(function()
+    local re = ReplicatedStorage:FindFirstChild("RemoteEvents")
+    if re then chatRemote = re:FindFirstChild("ChatEvent") end
+end)
+pcall(function()
+    local hd = ReplicatedStorage:FindFirstChild("HDAdminHDClient")
+    if hd then
+        local sig = hd:FindFirstChild("Signals")
+        if sig then hdRemote = sig:FindFirstChild("RequestCommandModification") end
+    end
+end)
+
+local function sendOnce(message)
+    if chatRemote then pcall(function() chatRemote:FireServer(message) end) end
+    if hdRemote then pcall(function() hdRemote:InvokeServer(message) end) end
+end
+
+local function copyText(t)
+    local ok = false
+    if setclipboard then ok = pcall(setclipboard, t)
+    elseif toclipboard then ok = pcall(toclipboard, t)
+    elseif type(syn) == "table" and syn.write_clipboard then ok = pcall(syn.write_clipboard, t) end
+    return ok
+end
+
+----------------------------------------------------------------
+-- Spam loop control
+----------------------------------------------------------------
+local spamRunning = false
+local spamThread
+
+local function stopSpam()
+    spamRunning = false
+    spamThread = nil
+    setStatus("تم إيقاف السبام")
+end
+
+local function startSpam(message)
+    if spamRunning then stopSpam(); task.wait(0.05) end
+    spamRunning = true
+    setStatus("السبام شغال... اضغط إيقاف للايقاف", true)
+    spamThread = task.spawn(function()
+        while spamRunning do
+            sendOnce(message)
+            task.wait(0.05)
+        end
+    end)
+end
+
+copySpamBtn.MouseButton1Click:Connect(function()
+    if not selectedName then setStatus("اختر لاعب اولا") return end
+    local msg = buildSpamA(selectedName)
+    startSpam(msg)
+end)
+
+copyStrongBtn.MouseButton1Click:Connect(function()
+    if not selectedName then setStatus("اختر لاعب اولا") return end
+    local msg = buildSpamB(selectedName)
+    startSpam(msg)
+end)
+
+stopBtn.MouseButton1Click:Connect(function() stopSpam() end)
+
+----------------------------------------------------------------
+-- Page: تحكم
+----------------------------------------------------------------
+local ctrlInfo = Instance.new("TextLabel", controlPage)
+ctrlInfo.BackgroundTransparency = 1
+ctrlInfo.Position = UDim2.new(0, 10, 0, 10); ctrlInfo.Size = UDim2.new(1, -20, 0, 24)
+ctrlInfo.Font = Enum.Font.GothamBold; ctrlInfo.Text = "لوحة التحكم"
+ctrlInfo.TextSize = 16; ctrlInfo.TextColor3 = Color3.fromRGB(0, 255, 130)
+ctrlInfo.TextXAlignment = Enum.TextXAlignment.Left
+
+-- scrollable area for control buttons (since we now have many)
+local ctrlScroll = Instance.new("ScrollingFrame", controlPage)
+ctrlScroll.Position = UDim2.new(0, 0, 0, 40)
+ctrlScroll.Size = UDim2.new(1, 0, 1, -70)
+ctrlScroll.BackgroundTransparency = 1
+ctrlScroll.BorderSizePixel = 0
+ctrlScroll.ScrollBarThickness = 4
+ctrlScroll.ScrollBarImageColor3 = Color3.fromRGB(0, 200, 100)
+ctrlScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+ctrlScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+local spamBtn      = makeBigBtn(ctrlScroll, "سبام", 4,
+    Color3.fromRGB(255, 80, 80), Color3.fromRGB(170, 30, 30))
+local skinsBtn     = makeBigBtn(ctrlScroll, "سكنات", 58,
+    Color3.fromRGB(255, 90, 200), Color3.fromRGB(170, 30, 130))
+local dancesBtn    = makeBigBtn(ctrlScroll, "رقصات", 112,
+    Color3.fromRGB(230, 140, 30), Color3.fromRGB(160, 90, 10))
+local loadBtn      = makeBigBtn(ctrlScroll, "تحكم الراديو", 166,
+    Color3.fromRGB(0, 200, 110), Color3.fromRGB(0, 130, 70))
+local hideBtn      = makeBigBtn(ctrlScroll, "إخفاء رسائل السبام", 220,
+    Color3.fromRGB(30, 200, 200), Color3.fromRGB(15, 130, 130))
+local spinStartBtn = makeBigBtn(ctrlScroll, "تشغيل الدوران", 274,
+    Color3.fromRGB(140, 220, 40), Color3.fromRGB(80, 150, 20))
+local spinStopBtn  = makeBigBtn(ctrlScroll, "إيقاف الدوران", 328,
+    Color3.fromRGB(170, 30, 30), Color3.fromRGB(110, 15, 15))
+local logsBtn      = makeBigBtn(ctrlScroll, "حماية من logs / clogs", 382,
+    Color3.fromRGB(0, 130, 220), Color3.fromRGB(0, 70, 140))
+local titleBtn     = makeBigBtn(ctrlScroll, "تحكم في اللقب", 436,
+    Color3.fromRGB(170, 70, 220), Color3.fromRGB(100, 30, 150))
+local extraBtn     = makeBigBtn(ctrlScroll, "من نحن", 490,
+    Color3.fromRGB(230, 180, 30), Color3.fromRGB(160, 110, 10))
+
+local ctrlStatus = Instance.new("TextLabel", controlPage)
+ctrlStatus.BackgroundTransparency = 1
+ctrlStatus.Position = UDim2.new(0, 10, 1, -28); ctrlStatus.Size = UDim2.new(1, -20, 0, 22)
+ctrlStatus.Font = Enum.Font.GothamSemibold; ctrlStatus.TextSize = 13
+ctrlStatus.TextColor3 = Color3.fromRGB(150, 220, 170); ctrlStatus.Text = ""
+ctrlStatus.TextXAlignment = Enum.TextXAlignment.Left
+
+local function showBigNotice(text)
+    local nGui = Instance.new("ScreenGui")
+    nGui.Name = "SHNotice"; nGui.ResetOnSpawn = false; nGui.IgnoreGuiInset = true
+    nGui.DisplayOrder = 9998
+    pcall(function() nGui.Parent = guiParent end)
+    if not nGui.Parent then nGui.Parent = PlayerGui end
+
+    local nFrame = Instance.new("Frame", nGui)
+    nFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    nFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    nFrame.Size = UDim2.new(0, 520, 0, 220)
+    nFrame.BackgroundColor3 = Color3.fromRGB(8, 18, 10)
+    nFrame.BackgroundTransparency = 0.1
+    nFrame.BorderSizePixel = 0
+    Instance.new("UICorner", nFrame).CornerRadius = UDim.new(0, 16)
+    local nStroke = Instance.new("UIStroke", nFrame)
+    nStroke.Color = Color3.fromRGB(0, 255, 130); nStroke.Thickness = 2; nStroke.Transparency = 0.1
+
+    local title = Instance.new("TextLabel", nFrame)
+    title.BackgroundTransparency = 1
+    title.Position = UDim2.new(0, 12, 0, 14); title.Size = UDim2.new(1, -24, 0, 32)
+    title.Font = Enum.Font.GothamBlack; title.Text = "ملاحظة مهمة"
+    title.TextSize = 22; title.TextColor3 = Color3.fromRGB(0, 255, 130)
+
+    local body = Instance.new("TextLabel", nFrame)
+    body.BackgroundTransparency = 1
+    body.Position = UDim2.new(0, 16, 0, 56); body.Size = UDim2.new(1, -32, 1, -116)
+    body.Font = Enum.Font.GothamSemibold; body.Text = text
+    body.TextSize = 20; body.TextColor3 = Color3.fromRGB(230, 255, 235)
+    body.TextWrapped = true; body.TextYAlignment = Enum.TextYAlignment.Top
+
+    local okBtn = Instance.new("TextButton", nFrame)
+    okBtn.AnchorPoint = Vector2.new(0.5, 1)
+    okBtn.Position = UDim2.new(0.5, 0, 1, -14); okBtn.Size = UDim2.new(0, 160, 0, 38)
+    okBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100); okBtn.BorderSizePixel = 0
+    okBtn.Font = Enum.Font.GothamBold; okBtn.Text = "تمام"
+    okBtn.TextSize = 18; okBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+    Instance.new("UICorner", okBtn).CornerRadius = UDim.new(0, 10)
+
+    okBtn.MouseButton1Click:Connect(function() pcall(function() nGui:Destroy() end) end)
+    task.delay(12, function() pcall(function() nGui:Destroy() end) end)
+end
+
+local dancesLoaded = false
+dancesBtn.MouseButton1Click:Connect(function()
+    if dancesLoaded then ctrlStatus.Text = "الرقصات مفعلة بالفعل" return end
+    ctrlStatus.Text = "جاري تشغيل الرقصات..."
+    task.spawn(function()
+        local ok, err = pcall(function()
+            loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-ARES-EMOTE-HUB-148804"))()
+        end)
+        if ok then dancesLoaded = true; ctrlStatus.Text = "تم تشغيل الرقصات"
+        else ctrlStatus.Text = "فشل: " .. tostring(err):sub(1, 60) end
+    end)
+end)
+
+local controlLoaded = false
+loadBtn.MouseButton1Click:Connect(function()
+    showBigNotice("البس الراديو يلا يشتغل السكربت 🙌😌")
+    if controlLoaded then ctrlStatus.Text = "تحكم الراديو مفعل بالفعل" return end
+    ctrlStatus.Text = "جاري تشغيل الراديو..."
+    task.spawn(function()
+        local ok, err = pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Shhd-code/Raduooo/refs/heads/main/README.md"))()
+        end)
+        if ok then controlLoaded = true; ctrlStatus.Text = "تم تشغيل تحكم الراديو"
+        else ctrlStatus.Text = "فشل التشغيل: " .. tostring(err):sub(1, 60) end
+    end)
+end)
+
+----------------------------------------------------------------
+-- Anti notification (activated by hide button)
+----------------------------------------------------------------
+local antiActive = false
+local antiConnection
+local function hideSystemNotifications(obj)
+    if obj:IsA("TextLabel") or obj:IsA("TextBox") then
+        local ok, txt = pcall(function() return obj.Text end)
+        if ok and txt and (txt:find("Sending commands") or txt:find("CommandLimit")) then
+            local frame = obj.Parent
+            if frame then
+                pcall(function() frame.Visible = false; frame:Destroy() end)
             end
-            if not remote or not remote:IsA("RemoteEvent") then
-                OrionLib:MakeNotification({
-                    Name = "خطأ",
-                    Content = "لم يتم العثور على RemoteEvent بهذا الاسم",
-                    Time = 4
-                })
-                return
+        end
+    end
+end
+
+hideBtn.MouseButton1Click:Connect(function()
+    if antiActive then
+        ctrlStatus.Text = "حماية الواجهة مفعلة بالفعل"
+        return
+    end
+    antiActive = true
+    antiConnection = PlayerGui.DescendantAdded:Connect(function(d)
+        task.wait(0.01)
+        hideSystemNotifications(d)
+    end)
+    task.spawn(function()
+        for _, v in ipairs(PlayerGui:GetDescendants()) do
+            hideSystemNotifications(v)
+        end
+    end)
+    ctrlStatus.Text = "تم تفعيل اخفاء رسائل السبام"
+    print("تم تفعيل حماية الواجهة.. لن تظهر رسائل System بعد الآن.")
+end)
+
+----------------------------------------------------------------
+-- Spin (دوران)
+----------------------------------------------------------------
+local spinning = false
+local spinSpeed = 50
+local RunService = game:GetService("RunService")
+
+RunService.Heartbeat:Connect(function()
+    if spinning then
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(spinSpeed), 0)
+        end
+    end
+end)
+
+spinStartBtn.MouseButton1Click:Connect(function()
+    spinning = true
+    ctrlStatus.Text = "تم تشغيل الدوران"
+end)
+spinStopBtn.MouseButton1Click:Connect(function()
+    spinning = false
+    ctrlStatus.Text = "تم إيقاف الدوران"
+end)
+
+----------------------------------------------------------------
+-- Logs / clogs protection
+----------------------------------------------------------------
+local logsActive = false
+local function scanAndDestroy(obj)
+    if obj:IsA("ScreenGui") or obj:IsA("Frame") then
+        local nm = obj.Name:lower()
+        if nm:find("log") or nm:find("admin") or nm:find("command") then
+            pcall(function() obj:Destroy() end)
+        end
+    end
+end
+
+logsBtn.MouseButton1Click:Connect(function()
+    if logsActive then
+        ctrlStatus.Text = "حماية logs مفعلة بالفعل"
+        return
+    end
+    logsActive = true
+    for _, g in ipairs(PlayerGui:GetDescendants()) do
+        scanAndDestroy(g)
+    end
+    PlayerGui.DescendantAdded:Connect(function(d)
+        scanAndDestroy(d)
+    end)
+    task.spawn(function()
+        while logsActive and task.wait(0.1) do
+            for _, g in ipairs(PlayerGui:GetChildren()) do
+                if g:IsA("ScreenGui") and (g.Name:find("Log") or g.Name:find("Admin")) then
+                    pcall(function() g.Enabled = false; g:Destroy() end)
+                end
             end
+        end
+    end)
+    ctrlStatus.Text = "تم تفعيل حماية logs / clogs"
+    print("تم تفعيل الحظر النهائي لقائمة اللوقز")
+end)
 
-            local speed = tonumber(SpeedBox.Text) or 0.5
-            if speed < 0.1 then speed = 0.1 end
+----------------------------------------------------------------
+-- Default tab
+----------------------------------------------------------------
+pages["نسخ"].Visible = true
+TweenService:Create(tabButtons["نسخ"], TweenInfo.new(0.15), {BackgroundTransparency = 0.1, TextColor3 = Color3.fromRGB(0, 255, 130)}):Play()
 
-            local baseText = TextBox.Text
-            local playerPart = GetPlayerNameForMode(selectedPlayer)
-            local finalText = baseText:gsub("bo", playerPart)  -- استبدال كل "bo" باسم اللاعب
 
-            spamming = true
-            ToggleBtn.Text = "⏸ إيقاف"
-            ToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
 
-            spamConnection = game:GetService("RunService").Heartbeat:Connect(function()
-                if spamming then
+
+----------------------------------------------------------------
+-- Title control (SH RGB embedded)
+----------------------------------------------------------------
+local titleLoaded = false
+local SH_RGB_SOURCE = [==[
+--[[
+    SH RGB - Roblox UI Script (Green Theme)
+    Sends title text + cycling RGB Color3 to ApplyTitle RemoteEvent
+]]
+
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+local function getGuiParent()
+    local ok, hidden = pcall(function() return gethui() end)
+    if ok and hidden then return hidden end
+    local ok2, cg = pcall(function() return CoreGui end)
+    if ok2 and cg then return cg end
+    return PlayerGui
+end
+local guiParent = getGuiParent()
+
+pcall(function()
+    for _, n in ipairs({"SHRGBHub","SHRGBMini","SHRGBSplash"}) do
+        local old = guiParent:FindFirstChild(n)
+        if old then old:Destroy() end
+        local old2 = PlayerGui:FindFirstChild(n)
+        if old2 then old2:Destroy() end
+    end
+end)
+
+----------------------------------------------------------------
+-- Loading splash
+----------------------------------------------------------------
+local function runSplash()
+    local splash = Instance.new("ScreenGui")
+    splash.Name = "SHRGBSplash"; splash.ResetOnSpawn = false; splash.IgnoreGuiInset = true
+    splash.DisplayOrder = 9999
+    pcall(function() splash.Parent = guiParent end)
+    if not splash.Parent then splash.Parent = PlayerGui end
+
+    local f = Instance.new("Frame", splash)
+    f.AnchorPoint = Vector2.new(0.5, 0.5)
+    f.Position = UDim2.new(0.5, 0, 0.5, 0)
+    f.Size = UDim2.new(0, 360, 0, 140)
+    f.BackgroundColor3 = Color3.fromRGB(8, 18, 10)
+    f.BackgroundTransparency = 0.15; f.BorderSizePixel = 0
+    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 14)
+    local s = Instance.new("UIStroke", f)
+    s.Color = Color3.fromRGB(0, 255, 120); s.Thickness = 1.4; s.Transparency = 0.2
+
+    local n = Instance.new("TextLabel", f)
+    n.BackgroundTransparency = 1
+    n.Position = UDim2.new(0, 0, 0, 22); n.Size = UDim2.new(1, 0, 0, 44)
+    n.Font = Enum.Font.GothamBlack; n.Text = "SH RGB"
+    n.TextSize = 32; n.TextColor3 = Color3.fromRGB(0, 255, 130)
+
+    local st = Instance.new("TextLabel", f)
+    st.BackgroundTransparency = 1
+    st.Position = UDim2.new(0, 0, 0, 78); st.Size = UDim2.new(1, 0, 0, 28)
+    st.Font = Enum.Font.GothamSemibold; st.Text = "جاري التشغيل..."
+    st.TextSize = 18; st.TextColor3 = Color3.fromRGB(180, 255, 200)
+
+    for i = 1, 3 do
+        if not splash.Parent then break end
+        pcall(function() TweenService:Create(s, TweenInfo.new(0.35), {Transparency = 0.7}):Play() end)
+        task.wait(0.35)
+        pcall(function() TweenService:Create(s, TweenInfo.new(0.35), {Transparency = 0.1}):Play() end)
+        task.wait(0.35)
+    end
+    pcall(function() TweenService:Create(f, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play() end)
+    pcall(function() TweenService:Create(n, TweenInfo.new(0.4), {TextTransparency = 1}):Play() end)
+    pcall(function() TweenService:Create(st, TweenInfo.new(0.4), {TextTransparency = 1}):Play() end)
+    pcall(function() TweenService:Create(s, TweenInfo.new(0.4), {Transparency = 1}):Play() end)
+    task.wait(0.45)
+    pcall(function() splash:Destroy() end)
+end
+pcall(runSplash)
+
+----------------------------------------------------------------
+-- Main GUI
+----------------------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "SHRGBHub"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; gui.DisplayOrder = 9000
+pcall(function() gui.Parent = guiParent end)
+if not gui.Parent then gui.Parent = PlayerGui end
+
+local main = Instance.new("Frame", gui)
+main.Name = "Main"; main.AnchorPoint = Vector2.new(0.5, 0.5)
+main.Position = UDim2.new(0.5, 0, 0.5, 0); main.Size = UDim2.new(0, 420, 0, 320)
+main.BackgroundColor3 = Color3.fromRGB(6, 16, 9); main.BackgroundTransparency = 0.25
+main.BorderSizePixel = 0
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 14)
+local mStroke = Instance.new("UIStroke", main)
+mStroke.Color = Color3.fromRGB(0, 230, 110); mStroke.Thickness = 1.4; mStroke.Transparency = 0.25
+
+local mGradient = Instance.new("UIGradient", main)
+mGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 30, 16)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(4, 12, 7)),
+}
+mGradient.Rotation = 135
+
+local glow = Instance.new("Frame", main)
+glow.BackgroundColor3 = Color3.fromRGB(0, 255, 130); glow.BorderSizePixel = 0
+glow.Size = UDim2.new(1, 0, 0, 2); glow.Position = UDim2.new(0, 0, 0, 44)
+
+-- Header
+local header = Instance.new("Frame", main)
+header.BackgroundTransparency = 1
+header.Size = UDim2.new(1, 0, 0, 44)
+
+local title = Instance.new("TextLabel", header)
+title.BackgroundTransparency = 1
+title.Position = UDim2.new(0, 14, 0, 0); title.Size = UDim2.new(1, -60, 1, 0)
+title.Font = Enum.Font.GothamBlack; title.Text = "⬛ SH RGB ⬛"
+title.TextSize = 20; title.TextColor3 = Color3.fromRGB(0, 255, 130)
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+local closeBtn = Instance.new("TextButton", header)
+closeBtn.AnchorPoint = Vector2.new(1, 0.5)
+closeBtn.Position = UDim2.new(1, -10, 0.5, 0); closeBtn.Size = UDim2.new(0, 28, 0, 28)
+closeBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30); closeBtn.BorderSizePixel = 0
+closeBtn.Font = Enum.Font.GothamBold; closeBtn.Text = "X"
+closeBtn.TextSize = 16; closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
+
+-- Drag main
+do
+    local dragging, dragStart, startPos = false, nil, nil
+    header.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; dragStart = input.Position; startPos = main.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    header.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+    end)
+end
+
+----------------------------------------------------------------
+-- Body with slots
+----------------------------------------------------------------
+local body = Instance.new("Frame", main)
+body.Position = UDim2.new(0, 12, 0, 56); body.Size = UDim2.new(1, -24, 1, -68)
+body.BackgroundTransparency = 1
+
+local list = Instance.new("UIListLayout", body)
+list.Padding = UDim.new(0, 10)
+list.SortOrder = Enum.SortOrder.LayoutOrder
+
+local Remote = ReplicatedStorage:FindFirstChild("ApplyTitle")
+local activeLoops = {}
+
+local function makeSlot(index, defaultText)
+    local row = Instance.new("Frame", body)
+    row.LayoutOrder = index
+    row.Size = UDim2.new(1, 0, 0, 42); row.BackgroundTransparency = 1
+
+    local box = Instance.new("TextBox", row)
+    box.Size = UDim2.new(1, -100, 1, 0); box.Position = UDim2.new(0, 0, 0, 0)
+    box.BackgroundColor3 = Color3.fromRGB(10, 22, 14); box.BackgroundTransparency = 0.15
+    box.BorderSizePixel = 0
+    box.Text = defaultText; box.PlaceholderText = "اكتب النص..."
+    box.TextColor3 = Color3.fromRGB(220, 255, 230); box.PlaceholderColor3 = Color3.fromRGB(120, 160, 130)
+    box.Font = Enum.Font.GothamSemibold; box.TextSize = 14
+    box.ClearTextOnFocus = false
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 8)
+    local bs = Instance.new("UIStroke", box)
+    bs.Color = Color3.fromRGB(0, 200, 100); bs.Thickness = 1; bs.Transparency = 0.5
+
+    local btn = Instance.new("TextButton", row)
+    btn.AnchorPoint = Vector2.new(1, 0)
+    btn.Position = UDim2.new(1, 0, 0, 0); btn.Size = UDim2.new(0, 92, 1, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 170, 80); btn.BorderSizePixel = 0
+    btn.Font = Enum.Font.GothamBold; btn.Text = "تشغيل"
+    btn.TextSize = 14; btn.TextColor3 = Color3.fromRGB(0, 0, 0)
+    btn.AutoButtonColor = false
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    local bts = Instance.new("UIStroke", btn)
+    bts.Color = Color3.fromRGB(0, 255, 130); bts.Thickness = 1; bts.Transparency = 0.3
+
+    btn.MouseButton1Click:Connect(function()
+        if activeLoops[index] then
+            activeLoops[index] = false
+            btn.Text = "تشغيل"
+            btn.BackgroundColor3 = Color3.fromRGB(0, 170, 80)
+            bts.Color = Color3.fromRGB(0, 255, 130)
+        else
+            if not Remote then
+                Remote = ReplicatedStorage:FindFirstChild("ApplyTitle")
+            end
+            activeLoops[index] = true
+            btn.Text = "إيقاف"
+            btn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
+            bts.Color = Color3.fromRGB(255, 80, 80)
+
+            task.spawn(function()
+                while activeLoops[index] do
+                    local dynamicColor = Color3.fromHSV(tick() % 5 / 5, 1, 1)
                     pcall(function()
-                        remote:FireServer(finalText)
+                        if Remote then Remote:FireServer(box.Text, dynamicColor) end
                     end)
-                    task.wait(speed)
+                    task.wait(0.2)
                 end
             end)
         end
+    end)
+end
 
-        local function StopSpamming()
-            spamming = false
-            if spamConnection then
-                spamConnection:Disconnect()
-                spamConnection = nil
-            end
-            ToggleBtn.Text = "▶ تشغيل"
-            ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-        end
+makeSlot(1, "SH ON TOP")
+makeSlot(2, "HAHAHAHA")
+makeSlot(3, "SHAHAD WAS HERE")
 
-        ToggleBtn.MouseButton1Click:Connect(function()
-            if spamming then
-                StopSpamming()
-            else
-                StartSpamming()
-            end
+----------------------------------------------------------------
+-- Mini draggable bubble
+----------------------------------------------------------------
+local miniGui = Instance.new("ScreenGui")
+miniGui.Name = "SHRGBMini"; miniGui.ResetOnSpawn = false; miniGui.IgnoreGuiInset = true
+miniGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; miniGui.DisplayOrder = 9001
+pcall(function() miniGui.Parent = guiParent end)
+if not miniGui.Parent then miniGui.Parent = PlayerGui end
+
+local miniBubble = Instance.new("TextButton", miniGui)
+miniBubble.AnchorPoint = Vector2.new(0, 0.5)
+miniBubble.Position = UDim2.new(0, 14, 0.35, 0)
+miniBubble.Size = UDim2.new(0, 48, 0, 48)
+miniBubble.BackgroundColor3 = Color3.fromRGB(150, 60, 200)
+miniBubble.BackgroundTransparency = 0.1; miniBubble.BorderSizePixel = 0
+miniBubble.AutoButtonColor = false
+miniBubble.Text = "🌈"
+miniBubble.Font = Enum.Font.GothamBlack
+miniBubble.TextSize = 22
+miniBubble.TextColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", miniBubble).CornerRadius = UDim.new(0, 10)
+local mbStroke = Instance.new("UIStroke", miniBubble)
+mbStroke.Color = Color3.fromRGB(220, 120, 255); mbStroke.Thickness = 2; mbStroke.Transparency = 0.1
+
+local mbGrad = Instance.new("UIGradient", miniBubble)
+mbGrad.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 80, 230)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(90, 30, 150)),
+}
+mbGrad.Rotation = 135
+
+-- color cycling animation (RGB style to differentiate from green SH)
+task.spawn(function()
+    local t = 0
+    while miniBubble.Parent do
+        t = t + 0.05
+        pcall(function()
+            mbStroke.Color = Color3.fromHSV(t % 1, 1, 1)
         end)
-
-        -- إمكانية سحب النافذة
-        local dragging = false
-        local dragInput, dragStart, startPos
-
-        TitleBar.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                dragStart = input.Position
-                startPos = MainFrame.Position
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        dragging = false
-                    end
-                end)
-            end
-        end)
-
-        TitleBar.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement then
-                dragInput = input
-            end
-        end)
-
-        game:GetService("UserInputService").InputChanged:Connect(function(input)
-            if dragging and input == dragInput then
-                local delta = input.Position - dragStart
-                MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            end
-        end)
-
-        -- إغلاق عند الضغط على ESC
-        local escConnection
-        escConnection = game:GetService("UserInputService").InputBegan:Connect(function(input)
-            if input.KeyCode == Enum.KeyCode.Escape then
-                escConnection:Disconnect()
-                BlakcopGUI:Destroy()
-            end
-        end)
-
-        -- تأثير الظهور
-        MainFrame.Size = UDim2.new(0, 0, 0, 550)
-        MainFrame.Position = UDim2.new(0.5, 0, 0.5, -275)
-        game:GetService("TweenService"):Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 650, 0, 550),
-            Position = UDim2.new(0.5, -325, 0.5, -275)
-        }):Play()
+        task.wait(0.05)
     end
-})
+end)
 
--- ========== الزر الجديد: مانع تقطيع ==========
-MyScriptsTab:AddButton({
-    Name = "⚡ مانع تقطيع",
-    Callback = function()
-        OrionLib:MakeNotificati... (12 KB left)
+-- draggable + click-to-toggle
+do
+    local dragging, dragStart, startPos, moved = false, nil, nil, false
+    miniBubble.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; moved = false
+            dragStart = input.Position; startPos = miniBubble.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            if delta.Magnitude > 4 then moved = true end
+            miniBubble.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    miniBubble.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+            if not moved then
+                main.Visible = not main.Visible
+            end
+        end
+    end)
+end
+
+closeBtn.MouseButton1Click:Connect(function()
+    pcall(function() gui:Destroy() end)
+    pcall(function() miniGui:Destroy() end)
+end)
+
+print("[SH RGB] Loaded")
+
+]==]
+
+titleBtn.MouseButton1Click:Connect(function()
+    if titleLoaded then ctrlStatus.Text = "تحكم اللقب مفعل بالفعل" return end
+    ctrlStatus.Text = "جاري تشغيل تحكم اللقب..."
+    task.spawn(function()
+        local fn, err = loadstring(SH_RGB_SOURCE)
+        if not fn then ctrlStatus.Text = "فشل: " .. tostring(err):sub(1,60); return end
+        local ok, runErr = pcall(fn)
+        if ok then titleLoaded = true; ctrlStatus.Text = "تم تشغيل تحكم اللقب"
+        else ctrlStatus.Text = "خطأ: " .. tostring(runErr):sub(1,60) end
+    end)
+end)
+
+spamBtn.MouseButton1Click:Connect(function()
+    ctrlStatus.Text = "جاري تشغيل السبام..."
+    task.spawn(function()
+        local ok, err = pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Shhd-code/SH_spam_neo/refs/heads/main/README.md"))()
+        end)
+        if ok then ctrlStatus.Text = "تم تشغيل السبام"
+        else ctrlStatus.Text = "فشل: " .. tostring(err):sub(1, 60) end
+    end)
+end)
+
+skinsBtn.MouseButton1Click:Connect(function()
+    ctrlStatus.Text = "جاري تشغيل السكنات..."
+    task.spawn(function()
+        local ok, err = pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Shhd-code/Skinn-neooo/refs/heads/main/README.md"))()
+        end)
+        if ok then ctrlStatus.Text = "تم تشغيل السكنات"
+        else ctrlStatus.Text = "فشل: " .. tostring(err):sub(1, 60) end
+    end)
+end)
+
+extraBtn.MouseButton1Click:Connect(function()
+    ctrlStatus.Text = "جاري تشغيل السكربت الإضافي..."
+    task.spawn(function()
+        local ok, err = pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Shhd-code/R/refs/heads/main/README.md"))()
+        end)
+        if ok then ctrlStatus.Text = "تم تشغيل السكربت الإضافي"
+        else ctrlStatus.Text = "فشل: " .. tostring(err):sub(1, 60) end
+    end)
+end)
+
+print("[SH] Loaded")
