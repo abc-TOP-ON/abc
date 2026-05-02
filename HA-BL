@@ -1,1113 +1,868 @@
---[[
-    SH Hub - Roblox UI Script
-    Tabs: نسخ (Copy) | تحكم (Control)
-]]
+if not isfolder then getgenv().isfolder = function() return true end end
+if not makefolder then getgenv().makefolder = function() end end
 
-local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/ImInsane-1337/neverlose-ui/refs/heads/main/source/library.lua"))()
 
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-
--- helper: choose best parent for executor GUIs (Delta/Synapse/etc)
-local function getGuiParent()
-    local ok, hidden = pcall(function() return gethui() end)
-    if ok and hidden then return hidden end
-    local ok2, cg = pcall(function() return CoreGui end)
-    if ok2 and cg then return cg end
-    return PlayerGui
-end
-local guiParent = getGuiParent()
-
--- cleanup old
-pcall(function()
-    for _, n in ipairs({"SHHub","SHMini","SHSplash"}) do
-        local old = guiParent:FindFirstChild(n)
-        if old then old:Destroy() end
-        local old2 = PlayerGui:FindFirstChild(n)
-        if old2 then old2:Destroy() end
-    end
-end)
-
-----------------------------------------------------------------
--- Loading splash: SH Zero Protocol (hacker intro)
-----------------------------------------------------------------
-local function runSplash()
-    local core = game:GetService("CoreGui")
-
-    if core:FindFirstChild("SH_ZeroProtocol") then core.SH_ZeroProtocol:Destroy() end
-
-    local sg = Instance.new("ScreenGui")
-    sg.Name = "SH_ZeroProtocol"
-    sg.DisplayOrder = 9999999
-    sg.IgnoreGuiInset = true
-    sg.Parent = core
-
-    local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, 0, 1, 0)
-    bg.BackgroundColor3 = Color3.new(0, 0, 0)
-    bg.BorderSizePixel = 0
-    bg.Parent = sg
-
-    task.spawn(function()
-        -- [المرحلة 1: تشويه النظام] (0-15 ثانية)
-        for i = 1, 30 do
-            local line = Instance.new("Frame")
-            line.Size = UDim2.new(1, 0, 0, 1)
-            line.Position = UDim2.new(0, 0, math.random(0, 100)/100, 0)
-            line.BackgroundColor3 = Color3.fromRGB(170, 0, 255) -- أرجواني نيون
-            line.BackgroundTransparency = 0.5
-            line.BorderSizePixel = 0
-            line.Parent = sg
-            task.delay(0.2, function() line:Destroy() end)
-
-            if i % 5 == 0 then
-                local warn = Instance.new("TextLabel")
-                warn.Text = "DECRYPTING_SH_FILES..."
-                warn.TextColor3 = Color3.new(0, 1, 0)
-                warn.Font = Enum.Font.Code
-                warn.TextSize = 20
-                warn.BackgroundTransparency = 1
-                warn.Position = UDim2.new(math.random(1, 7)/10, 0, math.random(1, 7)/10, 0)
-                warn.Parent = sg
-                task.delay(0.5, function() warn:Destroy() end)
-            end
-            task.wait(0.1)
-        end
-
-        -- [المرحلة 2: ظهور الهوية الرقمية] (15-30 ثانية)
-        local sh_id = Instance.new("TextLabel")
-        sh_id.Text = "ID: SH_REDACTED"
-        sh_id.TextColor3 = Color3.new(1, 1, 1)
-        sh_id.Font = Enum.Font.SpecialElite
-        sh_id.TextSize = 80
-        sh_id.BackgroundTransparency = 1
-        sh_id.Size = UDim2.new(1, 0, 0, 100)
-        sh_id.Position = UDim2.new(0, 0, 0.45, 0)
-        sh_id.Parent = sg
-
-        -- تأثير الاهتزاز الرقمي
-        for i = 1, 40 do
-            sh_id.Position = UDim2.new(0, math.random(-5, 5), 0.45, math.random(-5, 5))
-            sh_id.Rotation = math.random(-2, 2)
-            task.wait(0.05)
-        end
-        sh_id.Rotation = 0
-        sh_id.Text = "S H"
-        sh_id.TextSize = 150
-        sh_id.TextColor3 = Color3.fromRGB(0, 255, 150) -- أخضر مائي
-
-        -- [المرحلة 3: التثبيت والإنهاء] (30-40 ثانية)
-        local status = Instance.new("TextLabel")
-        status.Text = "ROOT_ACCESS_GRANTED"
-        status.TextColor3 = Color3.new(1, 1, 1)
-        status.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-        status.Font = Enum.Font.Code
-        status.TextSize = 25
-        status.Size = UDim2.new(0, 300, 0, 40)
-        status.Position = UDim2.new(0.5, -150, 0.8, 0)
-        status.Parent = sg
-
-        task.wait(10)
-        sg:Destroy()
-    end)
-end
-pcall(runSplash)
-
-----------------------------------------------------------------
--- Main GUI
-----------------------------------------------------------------
-local gui = Instance.new("ScreenGui")
-gui.Name = "SHHub"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; gui.DisplayOrder = 9000
-pcall(function() gui.Parent = guiParent end)
-if not gui.Parent then gui.Parent = PlayerGui end
-
-local main = Instance.new("Frame", gui)
-main.Name = "Main"; main.AnchorPoint = Vector2.new(0.5, 0.5)
-main.Position = UDim2.new(0.5, 0, 0.5, 0); main.Size = UDim2.new(0, 520, 0, 360)
-main.BackgroundColor3 = Color3.fromRGB(6, 16, 9); main.BackgroundTransparency = 0.25
-main.BorderSizePixel = 0
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 14)
-local mStroke = Instance.new("UIStroke", main)
-mStroke.Color = Color3.fromRGB(0, 230, 110); mStroke.Thickness = 1.4; mStroke.Transparency = 0.25
-local mGradient = Instance.new("UIGradient", main)
-mGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 30, 16)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(4, 12, 7)),
-}
-mGradient.Rotation = 135
-
-local glow = Instance.new("Frame", main)
-glow.BackgroundColor3 = Color3.fromRGB(0, 255, 130); glow.BorderSizePixel = 0
-glow.Size = UDim2.new(1, 0, 0, 2); glow.Position = UDim2.new(0, 0, 0, 44)
-local glowGrad = Instance.new("UIGradient", glow)
-glowGrad.Transparency = NumberSequence.new{
-    NumberSequenceKeypoint.new(0, 1),
-    NumberSequenceKeypoint.new(0.5, 0.2),
-    NumberSequenceKeypoint.new(1, 1),
-}
-task.spawn(function()
-    while glow.Parent do
-        glowGrad.Offset = Vector2.new(-1, 0)
-        TweenService:Create(glowGrad, TweenInfo.new(2.2, Enum.EasingStyle.Linear), {Offset = Vector2.new(1, 0)}):Play()
-        task.wait(2.2)
-    end
-end)
-
-local title = Instance.new("TextLabel", main)
-title.BackgroundTransparency = 1
-title.Size = UDim2.new(1, -90, 0, 44); title.Position = UDim2.new(0, 16, 0, 0)
-title.Font = Enum.Font.GothamBlack; title.Text = "⬛ SH ⬛"
-title.TextSize = 22; title.TextColor3 = Color3.fromRGB(0, 255, 130)
-title.TextXAlignment = Enum.TextXAlignment.Left
-
-----------------------------------------------------------------
--- Top buttons (close X + minimize circle)
-----------------------------------------------------------------
-local closeBtn = Instance.new("TextButton", main)
-closeBtn.AnchorPoint = Vector2.new(1, 0)
-closeBtn.Position = UDim2.new(1, -8, 0, 8)
-closeBtn.Size = UDim2.new(0, 28, 0, 28)
-closeBtn.BackgroundColor3 = Color3.fromRGB(0, 60, 30)
-closeBtn.BackgroundTransparency = 0.3; closeBtn.BorderSizePixel = 0
-closeBtn.Text = "X"; closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextColor3 = Color3.fromRGB(180, 255, 200); closeBtn.TextSize = 16
-closeBtn.AutoButtonColor = false
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
-local closeStroke = Instance.new("UIStroke", closeBtn)
-closeStroke.Color = Color3.fromRGB(0, 200, 100); closeStroke.Transparency = 0.4
-closeBtn.MouseEnter:Connect(function() TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.1}):Play() end)
-closeBtn.MouseLeave:Connect(function() TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play() end)
-
--- circle minimize
-local minBtn = Instance.new("TextButton", main)
-minBtn.AnchorPoint = Vector2.new(1, 0)
-minBtn.Position = UDim2.new(1, -44, 0, 8)
-minBtn.Size = UDim2.new(0, 28, 0, 28)
-minBtn.BackgroundColor3 = Color3.fromRGB(0, 90, 45)
-minBtn.BackgroundTransparency = 0.2; minBtn.BorderSizePixel = 0
-minBtn.Text = ""; minBtn.AutoButtonColor = false
-Instance.new("UICorner", minBtn).CornerRadius = UDim.new(1, 0) -- full circle
-local minStroke = Instance.new("UIStroke", minBtn)
-minStroke.Color = Color3.fromRGB(0, 255, 130); minStroke.Transparency = 0.2; minStroke.Thickness = 1.4
-minBtn.MouseEnter:Connect(function() TweenService:Create(minBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play() end)
-minBtn.MouseLeave:Connect(function() TweenService:Create(minBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.2}):Play() end)
-
-----------------------------------------------------------------
--- Floating mini circle (when hidden)
-----------------------------------------------------------------
-local miniGui = Instance.new("ScreenGui")
-miniGui.Name = "SHMini"; miniGui.ResetOnSpawn = false; miniGui.IgnoreGuiInset = true
-miniGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; miniGui.DisplayOrder = 9001
-pcall(function() miniGui.Parent = guiParent end)
-if not miniGui.Parent then miniGui.Parent = PlayerGui end
-
-local miniBubble = Instance.new("TextButton", miniGui)
-miniBubble.AnchorPoint = Vector2.new(0, 0.5)
-miniBubble.Position = UDim2.new(0, 16, 0.5, 0)
-miniBubble.Size = UDim2.new(0, 44, 0, 44)
-miniBubble.BackgroundColor3 = Color3.fromRGB(0, 110, 55)
-miniBubble.BackgroundTransparency = 0.15; miniBubble.BorderSizePixel = 0
-miniBubble.AutoButtonColor = false
-miniBubble.Text = "SH"
-miniBubble.Font = Enum.Font.GothamBlack
-miniBubble.TextSize = 14
-miniBubble.TextColor3 = Color3.fromRGB(230, 255, 240)
-miniBubble.Visible = false
-Instance.new("UICorner", miniBubble).CornerRadius = UDim.new(1, 0)
-local miniStroke = Instance.new("UIStroke", miniBubble)
-miniStroke.Color = Color3.fromRGB(0, 255, 130); miniStroke.Thickness = 1.6; miniStroke.Transparency = 0.2
-
--- pulse
-task.spawn(function()
-    while miniGui.Parent do
-        if miniBubble.Visible then
-            TweenService:Create(miniStroke, TweenInfo.new(0.7), {Transparency = 0.7}):Play(); task.wait(0.7)
-            TweenService:Create(miniStroke, TweenInfo.new(0.7), {Transparency = 0.15}):Play(); task.wait(0.7)
-        else
-            task.wait(0.2)
-        end
-    end
-end)
-
--- mini bubble stays ALWAYS visible. clicking it toggles the main panel.
-miniBubble.Visible = true
-
-local function setHidden(hidden)
-    if hidden then
-        TweenService:Create(main, TweenInfo.new(0.2), {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}):Play()
-        task.wait(0.22)
-        main.Visible = false
-        main.Size = UDim2.new(0, 520, 0, 360)
-        main.BackgroundTransparency = 0.25
-    else
-        main.Visible = true
-        main.Size = UDim2.new(0, 0, 0, 0)
-        main.BackgroundTransparency = 1
-        TweenService:Create(main, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 520, 0, 360), BackgroundTransparency = 0.25}):Play()
-    end
-end
-
-minBtn.MouseButton1Click:Connect(function() setHidden(true) end)
-miniBubble.MouseButton1Click:Connect(function()
-    setHidden(main.Visible)
-end)
-
-closeBtn.MouseButton1Click:Connect(function()
-    TweenService:Create(main, TweenInfo.new(0.2), {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}):Play()
-    task.wait(0.22); gui:Destroy(); miniGui:Destroy()
-end)
-
-----------------------------------------------------------------
--- Drag main + mini
-----------------------------------------------------------------
-local function makeDraggable(handle, target)
-    local dragging, dragStart, startPos
-    handle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true; dragStart = input.Position; startPos = target.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            target.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-end
-makeDraggable(title, main)
-makeDraggable(miniBubble, miniBubble)
-
-----------------------------------------------------------------
--- Tab bar
-----------------------------------------------------------------
-local tabBar = Instance.new("Frame", main)
-tabBar.BackgroundTransparency = 1
-tabBar.Position = UDim2.new(0, 16, 0, 56); tabBar.Size = UDim2.new(1, -32, 0, 36)
-local tabLayout = Instance.new("UIListLayout", tabBar)
-tabLayout.FillDirection = Enum.FillDirection.Horizontal; tabLayout.Padding = UDim.new(0, 8)
-
-local pages, tabButtons = {}, {}
-
-local function makeTab(name)
-    local btn = Instance.new("TextButton", tabBar)
-    btn.Size = UDim2.new(0, 130, 1, 0); btn.BackgroundColor3 = Color3.fromRGB(8, 30, 14)
-    btn.BackgroundTransparency = 0.4; btn.BorderSizePixel = 0; btn.AutoButtonColor = false
-    btn.Font = Enum.Font.GothamBold; btn.Text = name; btn.TextSize = 15
-    btn.TextColor3 = Color3.fromRGB(160, 230, 180)
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
-    local s = Instance.new("UIStroke", btn); s.Color = Color3.fromRGB(0, 200, 100); s.Transparency = 0.6
-
-    local page = Instance.new("Frame", main)
-    page.Position = UDim2.new(0, 16, 0, 100); page.Size = UDim2.new(1, -32, 1, -116)
-    page.BackgroundColor3 = Color3.fromRGB(4, 12, 7); page.BackgroundTransparency = 0.4
-    page.BorderSizePixel = 0; page.Visible = false
-    Instance.new("UICorner", page).CornerRadius = UDim.new(0, 10)
-    local ps = Instance.new("UIStroke", page); ps.Color = Color3.fromRGB(0, 180, 90); ps.Transparency = 0.7
-
-    pages[name] = page; tabButtons[name] = btn
-    btn.MouseButton1Click:Connect(function()
-        for n, p in pairs(pages) do p.Visible = (n == name) end
-        for n, b in pairs(tabButtons) do
-            if n == name then
-                TweenService:Create(b, TweenInfo.new(0.15), {BackgroundTransparency = 0.1, TextColor3 = Color3.fromRGB(0, 255, 130)}):Play()
-            else
-                TweenService:Create(b, TweenInfo.new(0.15), {BackgroundTransparency = 0.4, TextColor3 = Color3.fromRGB(160, 230, 180)}):Play()
-            end
-        end
-    end)
-    return page, btn
-end
-
-local copyPage    = makeTab("نسخ")
-local controlPage = makeTab("تحكم")
-
-----------------------------------------------------------------
--- Page: نسخ
-----------------------------------------------------------------
-local selectedName = nil
-
-local playersBar = Instance.new("ScrollingFrame", copyPage)
-playersBar.Position = UDim2.new(0, 10, 0, 10); playersBar.Size = UDim2.new(1, -20, 0, 46)
-playersBar.BackgroundColor3 = Color3.fromRGB(2, 10, 5); playersBar.BackgroundTransparency = 0.5
-playersBar.BorderSizePixel = 0; playersBar.ScrollBarThickness = 3
-playersBar.ScrollingDirection = Enum.ScrollingDirection.X
-playersBar.AutomaticCanvasSize = Enum.AutomaticSize.X
-playersBar.CanvasSize = UDim2.new(0, 0, 0, 0)
-playersBar.ScrollBarImageColor3 = Color3.fromRGB(0, 255, 130)
-Instance.new("UICorner", playersBar).CornerRadius = UDim.new(0, 8)
-local pbLayout = Instance.new("UIListLayout", playersBar)
-pbLayout.FillDirection = Enum.FillDirection.Horizontal; pbLayout.Padding = UDim.new(0, 6)
-pbLayout.SortOrder = Enum.SortOrder.LayoutOrder; pbLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-local pbPad = Instance.new("UIPadding", playersBar)
-pbPad.PaddingLeft = UDim.new(0, 8); pbPad.PaddingRight = UDim.new(0, 8)
-
-local selectedLabel = Instance.new("TextLabel", copyPage)
-selectedLabel.BackgroundTransparency = 1
-selectedLabel.Position = UDim2.new(0, 10, 0, 60); selectedLabel.Size = UDim2.new(1, -20, 0, 20)
-selectedLabel.Font = Enum.Font.GothamSemibold; selectedLabel.TextSize = 13
-selectedLabel.TextColor3 = Color3.fromRGB(180, 255, 200)
-selectedLabel.TextXAlignment = Enum.TextXAlignment.Left
-selectedLabel.Text = "اختر لاعب من القائمة"
-
-local playerChips = {}
-local function refreshPlayers()
-    for _, c in ipairs(playersBar:GetChildren()) do
-        if c:IsA("TextButton") then c:Destroy() end
-    end
-    playerChips = {}
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer then
-            local chip = Instance.new("TextButton", playersBar)
-            chip.Size = UDim2.new(0, 0, 1, -8); chip.AutomaticSize = Enum.AutomaticSize.X
-            chip.BackgroundColor3 = Color3.fromRGB(10, 35, 18); chip.BackgroundTransparency = 0.2
-            chip.BorderSizePixel = 0; chip.AutoButtonColor = false
-            chip.Font = Enum.Font.GothamBold; chip.Text = "  " .. p.Name .. "  "
-            chip.TextSize = 13; chip.TextColor3 = Color3.fromRGB(200, 255, 215)
-            Instance.new("UICorner", chip).CornerRadius = UDim.new(0, 8)
-            local cs = Instance.new("UIStroke", chip); cs.Color = Color3.fromRGB(0, 200, 100); cs.Transparency = 0.5
-            chip.MouseButton1Click:Connect(function()
-                selectedName = p.Name
-                selectedLabel.Text = "تم اختيار: " .. p.Name
-                for _, ch in pairs(playerChips) do
-                    TweenService:Create(ch, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(10, 35, 18)}):Play()
-                end
-                TweenService:Create(chip, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(0, 120, 60)}):Play()
-            end)
-            chip.MouseEnter:Connect(function()
-                if selectedName ~= p.Name then
-                    TweenService:Create(chip, TweenInfo.new(0.12), {BackgroundTransparency = 0.05}):Play()
-                end
-            end)
-            chip.MouseLeave:Connect(function()
-                if selectedName ~= p.Name then
-                    TweenService:Create(chip, TweenInfo.new(0.12), {BackgroundTransparency = 0.2}):Play()
-                end
-            end)
-            playerChips[p.Name] = chip
-        end
-    end
-end
-refreshPlayers()
-Players.PlayerAdded:Connect(refreshPlayers)
-Players.PlayerRemoving:Connect(refreshPlayers)
-
-local function makeBigBtn(parent, text, posY, color1, color2)
-    color1 = color1 or Color3.fromRGB(0, 150, 75)
-    color2 = color2 or Color3.fromRGB(0, 90, 45)
-    local b = Instance.new("TextButton", parent)
-    b.Position = UDim2.new(0, 10, 0, posY); b.Size = UDim2.new(1, -20, 0, 46)
-    b.BackgroundColor3 = Color3.fromRGB(0, 110, 55); b.BackgroundTransparency = 0.15
-    b.BorderSizePixel = 0; b.AutoButtonColor = false
-    b.Font = Enum.Font.GothamBlack; b.Text = text; b.TextSize = 16
-    b.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
-    local s = Instance.new("UIStroke", b); s.Color = Color3.fromRGB(0, 255, 130); s.Transparency = 0.3
-    local g = Instance.new("UIGradient", b)
-    g.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, color1),
-        ColorSequenceKeypoint.new(1, color2),
-    }
-    g.Rotation = 90
-    b.MouseEnter:Connect(function() TweenService:Create(b, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play() end)
-    b.MouseLeave:Connect(function() TweenService:Create(b, TweenInfo.new(0.15), {BackgroundTransparency = 0.15}):Play() end)
-    return b
-end
-
-local copySpamBtn   = makeBigBtn(copyPage, "نسخ سبام", 88)
-local copyStrongBtn = makeBigBtn(copyPage, "نسخ قوي سبام", 142)
-local stopBtn       = makeBigBtn(copyPage, "إيقاف السبام", 196,
-    Color3.fromRGB(170, 30, 30), Color3.fromRGB(110, 15, 15))
-
-local statusLbl = Instance.new("TextLabel", copyPage)
-statusLbl.BackgroundTransparency = 1
-statusLbl.Position = UDim2.new(0, 10, 1, -28); statusLbl.Size = UDim2.new(1, -20, 0, 22)
-statusLbl.Font = Enum.Font.GothamSemibold; statusLbl.TextSize = 13
-statusLbl.TextColor3 = Color3.fromRGB(150, 220, 170); statusLbl.Text = ""
-
-local function setStatus(txt, persistent)
-    statusLbl.Text = txt; statusLbl.TextTransparency = 0
-    if not persistent then
-        task.delay(2.5, function()
-            if statusLbl.Text == txt then
-                TweenService:Create(statusLbl, TweenInfo.new(0.6), {TextTransparency = 1}):Play()
-            end
-        end)
-    end
-end
-
--- Build single-message spam strings
-local function buildSpamA(name)
-    local block = string.format(";logs %s ;clogs %s ;nv %s ;re %s ;res %s",
-        name, name, name, name, name)
-    local parts = {}
-    for i = 1, 5 do parts[i] = block end
-    return table.concat(parts, " ")
-end
-
-local function buildSpamB(name)
-    local cmds = {
-        ";apparate %s inf",";fling %s",";jp %s inf",";jc %s",
-        ";ice %s",";emotes %s",";phase %s",";cmdbar %s",
-        ";nv %s",";jump %s",";re %s",";res %s",";kill %s",";ping %s",
-    }
-    local out = {}
-    for i, fmt in ipairs(cmds) do out[i] = string.format(fmt, name) end
-    return table.concat(out, " ")
-end
-
-----------------------------------------------------------------
--- Remotes
-----------------------------------------------------------------
-local chatRemote, hdRemote
-pcall(function()
-    local re = ReplicatedStorage:FindFirstChild("RemoteEvents")
-    if re then chatRemote = re:FindFirstChild("ChatEvent") end
-end)
-pcall(function()
-    local hd = ReplicatedStorage:FindFirstChild("HDAdminHDClient")
-    if hd then
-        local sig = hd:FindFirstChild("Signals")
-        if sig then hdRemote = sig:FindFirstChild("RequestCommandModification") end
-    end
-end)
-
-local function sendOnce(message)
-    if chatRemote then pcall(function() chatRemote:FireServer(message) end) end
-    if hdRemote then pcall(function() hdRemote:InvokeServer(message) end) end
-end
-
-local function copyText(t)
-    local ok = false
-    if setclipboard then ok = pcall(setclipboard, t)
-    elseif toclipboard then ok = pcall(toclipboard, t)
-    elseif type(syn) == "table" and syn.write_clipboard then ok = pcall(syn.write_clipboard, t) end
-    return ok
-end
-
-----------------------------------------------------------------
--- Spam loop control
-----------------------------------------------------------------
-local spamRunning = false
-local spamThread
-
-local function stopSpam()
-    spamRunning = false
-    spamThread = nil
-    setStatus("تم إيقاف السبام")
-end
-
-local function startSpam(message)
-    if spamRunning then stopSpam(); task.wait(0.05) end
-    spamRunning = true
-    setStatus("السبام شغال... اضغط إيقاف للايقاف", true)
-    spamThread = task.spawn(function()
-        while spamRunning do
-            sendOnce(message)
-            task.wait(0.05)
-        end
-    end)
-end
-
-copySpamBtn.MouseButton1Click:Connect(function()
-    if not selectedName then setStatus("اختر لاعب اولا") return end
-    local msg = buildSpamA(selectedName)
-    startSpam(msg)
-end)
-
-copyStrongBtn.MouseButton1Click:Connect(function()
-    if not selectedName then setStatus("اختر لاعب اولا") return end
-    local msg = buildSpamB(selectedName)
-    startSpam(msg)
-end)
-
-stopBtn.MouseButton1Click:Connect(function() stopSpam() end)
-
-----------------------------------------------------------------
--- Page: تحكم
-----------------------------------------------------------------
-local ctrlInfo = Instance.new("TextLabel", controlPage)
-ctrlInfo.BackgroundTransparency = 1
-ctrlInfo.Position = UDim2.new(0, 10, 0, 10); ctrlInfo.Size = UDim2.new(1, -20, 0, 24)
-ctrlInfo.Font = Enum.Font.GothamBold; ctrlInfo.Text = "لوحة التحكم"
-ctrlInfo.TextSize = 16; ctrlInfo.TextColor3 = Color3.fromRGB(0, 255, 130)
-ctrlInfo.TextXAlignment = Enum.TextXAlignment.Left
-
--- scrollable area for control buttons (since we now have many)
-local ctrlScroll = Instance.new("ScrollingFrame", controlPage)
-ctrlScroll.Position = UDim2.new(0, 0, 0, 40)
-ctrlScroll.Size = UDim2.new(1, 0, 1, -70)
-ctrlScroll.BackgroundTransparency = 1
-ctrlScroll.BorderSizePixel = 0
-ctrlScroll.ScrollBarThickness = 4
-ctrlScroll.ScrollBarImageColor3 = Color3.fromRGB(0, 200, 100)
-ctrlScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-ctrlScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-
-local spamBtn      = makeBigBtn(ctrlScroll, "سبام", 4,
-    Color3.fromRGB(255, 80, 80), Color3.fromRGB(170, 30, 30))
-local skinsBtn     = makeBigBtn(ctrlScroll, "سكنات", 58,
-    Color3.fromRGB(255, 90, 200), Color3.fromRGB(170, 30, 130))
-local dancesBtn    = makeBigBtn(ctrlScroll, "رقصات", 112,
-    Color3.fromRGB(230, 140, 30), Color3.fromRGB(160, 90, 10))
-local loadBtn      = makeBigBtn(ctrlScroll, "تحكم الراديو", 166,
-    Color3.fromRGB(0, 200, 110), Color3.fromRGB(0, 130, 70))
-local hideBtn      = makeBigBtn(ctrlScroll, "إخفاء رسائل السبام", 220,
-    Color3.fromRGB(30, 200, 200), Color3.fromRGB(15, 130, 130))
-local spinStartBtn = makeBigBtn(ctrlScroll, "تشغيل الدوران", 274,
-    Color3.fromRGB(140, 220, 40), Color3.fromRGB(80, 150, 20))
-local spinStopBtn  = makeBigBtn(ctrlScroll, "إيقاف الدوران", 328,
-    Color3.fromRGB(170, 30, 30), Color3.fromRGB(110, 15, 15))
-local logsBtn      = makeBigBtn(ctrlScroll, "حماية من logs / clogs", 382,
-    Color3.fromRGB(0, 130, 220), Color3.fromRGB(0, 70, 140))
-local titleBtn     = makeBigBtn(ctrlScroll, "تحكم في اللقب", 436,
-    Color3.fromRGB(170, 70, 220), Color3.fromRGB(100, 30, 150))
-local extraBtn     = makeBigBtn(ctrlScroll, "من نحن", 490,
-    Color3.fromRGB(230, 180, 30), Color3.fromRGB(160, 110, 10))
-
-local ctrlStatus = Instance.new("TextLabel", controlPage)
-ctrlStatus.BackgroundTransparency = 1
-ctrlStatus.Position = UDim2.new(0, 10, 1, -28); ctrlStatus.Size = UDim2.new(1, -20, 0, 22)
-ctrlStatus.Font = Enum.Font.GothamSemibold; ctrlStatus.TextSize = 13
-ctrlStatus.TextColor3 = Color3.fromRGB(150, 220, 170); ctrlStatus.Text = ""
-ctrlStatus.TextXAlignment = Enum.TextXAlignment.Left
-
-local function showBigNotice(text)
-    local nGui = Instance.new("ScreenGui")
-    nGui.Name = "SHNotice"; nGui.ResetOnSpawn = false; nGui.IgnoreGuiInset = true
-    nGui.DisplayOrder = 9998
-    pcall(function() nGui.Parent = guiParent end)
-    if not nGui.Parent then nGui.Parent = PlayerGui end
-
-    local nFrame = Instance.new("Frame", nGui)
-    nFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    nFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    nFrame.Size = UDim2.new(0, 520, 0, 220)
-    nFrame.BackgroundColor3 = Color3.fromRGB(8, 18, 10)
-    nFrame.BackgroundTransparency = 0.1
-    nFrame.BorderSizePixel = 0
-    Instance.new("UICorner", nFrame).CornerRadius = UDim.new(0, 16)
-    local nStroke = Instance.new("UIStroke", nFrame)
-    nStroke.Color = Color3.fromRGB(0, 255, 130); nStroke.Thickness = 2; nStroke.Transparency = 0.1
-
-    local title = Instance.new("TextLabel", nFrame)
-    title.BackgroundTransparency = 1
-    title.Position = UDim2.new(0, 12, 0, 14); title.Size = UDim2.new(1, -24, 0, 32)
-    title.Font = Enum.Font.GothamBlack; title.Text = "ملاحظة مهمة"
-    title.TextSize = 22; title.TextColor3 = Color3.fromRGB(0, 255, 130)
-
-    local body = Instance.new("TextLabel", nFrame)
-    body.BackgroundTransparency = 1
-    body.Position = UDim2.new(0, 16, 0, 56); body.Size = UDim2.new(1, -32, 1, -116)
-    body.Font = Enum.Font.GothamSemibold; body.Text = text
-    body.TextSize = 20; body.TextColor3 = Color3.fromRGB(230, 255, 235)
-    body.TextWrapped = true; body.TextYAlignment = Enum.TextYAlignment.Top
-
-    local okBtn = Instance.new("TextButton", nFrame)
-    okBtn.AnchorPoint = Vector2.new(0.5, 1)
-    okBtn.Position = UDim2.new(0.5, 0, 1, -14); okBtn.Size = UDim2.new(0, 160, 0, 38)
-    okBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100); okBtn.BorderSizePixel = 0
-    okBtn.Font = Enum.Font.GothamBold; okBtn.Text = "تمام"
-    okBtn.TextSize = 18; okBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
-    Instance.new("UICorner", okBtn).CornerRadius = UDim.new(0, 10)
-
-    okBtn.MouseButton1Click:Connect(function() pcall(function() nGui:Destroy() end) end)
-    task.delay(12, function() pcall(function() nGui:Destroy() end) end)
-end
-
-local dancesLoaded = false
-dancesBtn.MouseButton1Click:Connect(function()
-    if dancesLoaded then ctrlStatus.Text = "الرقصات مفعلة بالفعل" return end
-    ctrlStatus.Text = "جاري تشغيل الرقصات..."
-    task.spawn(function()
-        local ok, err = pcall(function()
-            loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-ARES-EMOTE-HUB-148804"))()
-        end)
-        if ok then dancesLoaded = true; ctrlStatus.Text = "تم تشغيل الرقصات"
-        else ctrlStatus.Text = "فشل: " .. tostring(err):sub(1, 60) end
-    end)
-end)
-
-local controlLoaded = false
-loadBtn.MouseButton1Click:Connect(function()
-    showBigNotice("البس الراديو يلا يشتغل السكربت 🙌😌")
-    if controlLoaded then ctrlStatus.Text = "تحكم الراديو مفعل بالفعل" return end
-    ctrlStatus.Text = "جاري تشغيل الراديو..."
-    task.spawn(function()
-        local ok, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Shhd-code/Raduooo/refs/heads/main/README.md"))()
-        end)
-        if ok then controlLoaded = true; ctrlStatus.Text = "تم تشغيل تحكم الراديو"
-        else ctrlStatus.Text = "فشل التشغيل: " .. tostring(err):sub(1, 60) end
-    end)
-end)
-
-----------------------------------------------------------------
--- Anti notification (activated by hide button)
-----------------------------------------------------------------
-local antiActive = false
-local antiConnection
-local function hideSystemNotifications(obj)
-    if obj:IsA("TextLabel") or obj:IsA("TextBox") then
-        local ok, txt = pcall(function() return obj.Text end)
-        if ok and txt and (txt:find("Sending commands") or txt:find("CommandLimit")) then
-            local frame = obj.Parent
-            if frame then
-                pcall(function() frame.Visible = false; frame:Destroy() end)
-            end
-        end
-    end
-end
-
-hideBtn.MouseButton1Click:Connect(function()
-    if antiActive then
-        ctrlStatus.Text = "حماية الواجهة مفعلة بالفعل"
-        return
-    end
-    antiActive = true
-    antiConnection = PlayerGui.DescendantAdded:Connect(function(d)
-        task.wait(0.01)
-        hideSystemNotifications(d)
-    end)
-    task.spawn(function()
-        for _, v in ipairs(PlayerGui:GetDescendants()) do
-            hideSystemNotifications(v)
-        end
-    end)
-    ctrlStatus.Text = "تم تفعيل اخفاء رسائل السبام"
-    print("تم تفعيل حماية الواجهة.. لن تظهر رسائل System بعد الآن.")
-end)
-
-----------------------------------------------------------------
--- Spin (دوران)
-----------------------------------------------------------------
-local spinning = false
-local spinSpeed = 50
+-- [РЎР•Р Р’РРЎР«]
+local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-
-RunService.Heartbeat:Connect(function()
-    if spinning then
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(spinSpeed), 0)
-        end
-    end
-end)
-
-spinStartBtn.MouseButton1Click:Connect(function()
-    spinning = true
-    ctrlStatus.Text = "تم تشغيل الدوران"
-end)
-spinStopBtn.MouseButton1Click:Connect(function()
-    spinning = false
-    ctrlStatus.Text = "تم إيقاف الدوران"
-end)
-
-----------------------------------------------------------------
--- Logs / clogs protection
-----------------------------------------------------------------
-local logsActive = false
-local function scanAndDestroy(obj)
-    if obj:IsA("ScreenGui") or obj:IsA("Frame") then
-        local nm = obj.Name:lower()
-        if nm:find("log") or nm:find("admin") or nm:find("command") then
-            pcall(function() obj:Destroy() end)
-        end
-    end
-end
-
-logsBtn.MouseButton1Click:Connect(function()
-    if logsActive then
-        ctrlStatus.Text = "حماية logs مفعلة بالفعل"
-        return
-    end
-    logsActive = true
-    for _, g in ipairs(PlayerGui:GetDescendants()) do
-        scanAndDestroy(g)
-    end
-    PlayerGui.DescendantAdded:Connect(function(d)
-        scanAndDestroy(d)
-    end)
-    task.spawn(function()
-        while logsActive and task.wait(0.1) do
-            for _, g in ipairs(PlayerGui:GetChildren()) do
-                if g:IsA("ScreenGui") and (g.Name:find("Log") or g.Name:find("Admin")) then
-                    pcall(function() g.Enabled = false; g:Destroy() end)
-                end
-            end
-        end
-    end)
-    ctrlStatus.Text = "تم تفعيل حماية logs / clogs"
-    print("تم تفعيل الحظر النهائي لقائمة اللوقز")
-end)
-
-----------------------------------------------------------------
--- Default tab
-----------------------------------------------------------------
-pages["نسخ"].Visible = true
-TweenService:Create(tabButtons["نسخ"], TweenInfo.new(0.15), {BackgroundTransparency = 0.1, TextColor3 = Color3.fromRGB(0, 255, 130)}):Play()
-
-
-
-
-----------------------------------------------------------------
--- Title control (SH RGB embedded)
-----------------------------------------------------------------
-local titleLoaded = false
-local SH_RGB_SOURCE = [==[
---[[
-    SH RGB - Roblox UI Script (Green Theme)
-    Sends title text + cycling RGB Color3 to ApplyTitle RemoteEvent
-]]
-
 local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Lighting = game:GetService("Lighting")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local Camera = workspace.CurrentCamera
+local Player = Players.LocalPlayer
 
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-
-local function getGuiParent()
-    local ok, hidden = pcall(function() return gethui() end)
-    if ok and hidden then return hidden end
-    local ok2, cg = pcall(function() return CoreGui end)
-    if ok2 and cg then return cg end
-    return PlayerGui
-end
-local guiParent = getGuiParent()
-
-pcall(function()
-    for _, n in ipairs({"SHRGBHub","SHRGBMini","SHRGBSplash"}) do
-        local old = guiParent:FindFirstChild(n)
-        if old then old:Destroy() end
-        local old2 = PlayerGui:FindFirstChild(n)
-        if old2 then old2:Destroy() end
-    end
-end)
-
-----------------------------------------------------------------
--- Loading splash
-----------------------------------------------------------------
-local function runSplash()
-    local splash = Instance.new("ScreenGui")
-    splash.Name = "SHRGBSplash"; splash.ResetOnSpawn = false; splash.IgnoreGuiInset = true
-    splash.DisplayOrder = 9999
-    pcall(function() splash.Parent = guiParent end)
-    if not splash.Parent then splash.Parent = PlayerGui end
-
-    local f = Instance.new("Frame", splash)
-    f.AnchorPoint = Vector2.new(0.5, 0.5)
-    f.Position = UDim2.new(0.5, 0, 0.5, 0)
-    f.Size = UDim2.new(0, 360, 0, 140)
-    f.BackgroundColor3 = Color3.fromRGB(8, 18, 10)
-    f.BackgroundTransparency = 0.15; f.BorderSizePixel = 0
-    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 14)
-    local s = Instance.new("UIStroke", f)
-    s.Color = Color3.fromRGB(0, 255, 120); s.Thickness = 1.4; s.Transparency = 0.2
-
-    local n = Instance.new("TextLabel", f)
-    n.BackgroundTransparency = 1
-    n.Position = UDim2.new(0, 0, 0, 22); n.Size = UDim2.new(1, 0, 0, 44)
-    n.Font = Enum.Font.GothamBlack; n.Text = "SH RGB"
-    n.TextSize = 32; n.TextColor3 = Color3.fromRGB(0, 255, 130)
-
-    local st = Instance.new("TextLabel", f)
-    st.BackgroundTransparency = 1
-    st.Position = UDim2.new(0, 0, 0, 78); st.Size = UDim2.new(1, 0, 0, 28)
-    st.Font = Enum.Font.GothamSemibold; st.Text = "جاري التشغيل..."
-    st.TextSize = 18; st.TextColor3 = Color3.fromRGB(180, 255, 200)
-
-    for i = 1, 3 do
-        if not splash.Parent then break end
-        pcall(function() TweenService:Create(s, TweenInfo.new(0.35), {Transparency = 0.7}):Play() end)
-        task.wait(0.35)
-        pcall(function() TweenService:Create(s, TweenInfo.new(0.35), {Transparency = 0.1}):Play() end)
-        task.wait(0.35)
-    end
-    pcall(function() TweenService:Create(f, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play() end)
-    pcall(function() TweenService:Create(n, TweenInfo.new(0.4), {TextTransparency = 1}):Play() end)
-    pcall(function() TweenService:Create(st, TweenInfo.new(0.4), {TextTransparency = 1}):Play() end)
-    pcall(function() TweenService:Create(s, TweenInfo.new(0.4), {Transparency = 1}):Play() end)
-    task.wait(0.45)
-    pcall(function() splash:Destroy() end)
-end
-pcall(runSplash)
-
-----------------------------------------------------------------
--- Main GUI
-----------------------------------------------------------------
-local gui = Instance.new("ScreenGui")
-gui.Name = "SHRGBHub"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; gui.DisplayOrder = 9000
-pcall(function() gui.Parent = guiParent end)
-if not gui.Parent then gui.Parent = PlayerGui end
-
-local main = Instance.new("Frame", gui)
-main.Name = "Main"; main.AnchorPoint = Vector2.new(0.5, 0.5)
-main.Position = UDim2.new(0.5, 0, 0.5, 0); main.Size = UDim2.new(0, 420, 0, 320)
-main.BackgroundColor3 = Color3.fromRGB(6, 16, 9); main.BackgroundTransparency = 0.25
-main.BorderSizePixel = 0
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 14)
-local mStroke = Instance.new("UIStroke", main)
-mStroke.Color = Color3.fromRGB(0, 230, 110); mStroke.Thickness = 1.4; mStroke.Transparency = 0.25
-
-local mGradient = Instance.new("UIGradient", main)
-mGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 30, 16)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(4, 12, 7)),
+-- [Р’РЎР• РќРђРЎРўР РћР™РљР]
+local QueueSave
+local IsLoading = false
+local SettingsData = {
+    -- Aimbot
+    Enabled = false, FOV = 150, HitPart = "Head", ShotDelay = 0.03,
+    WallCheck = false, TeamCheck = false, Smoothing = false, SmoothFactor = 5,
+    Prediction = false, PredictionAmount = 0.13, SilentAim = true,
+    SilentExtraLead = 0.025,
+    SilentForceShot = false,
+    UseNamecallHook = false,
+    AutoFire = false, TriggerBot = false, TriggerDelay = 0.05,
+    
+    -- Hitbox
+    HitboxSink = false, HitboxSinkDepth = 15, HitboxDesync = false, HitboxDesyncOffset = 10,
+    
+    -- Target visuals
+    TargetESP = false, TargetTracer = false, TargetPanel = true, TargetColor = Color3.fromRGB(255, 0, 0),
+    ShowFOV = true, FOVColor = Color3.fromRGB(255, 255, 255),
+    RaycastVisuals = false, RaycastMaxLines = 4, RaycastShowCount = true, RaycastColor = Color3.fromRGB(255, 120, 70),
+    
+    -- Player Visuals
+    ChamsEnabled = false, GlowEnabled = false, RainbowGlow = false,
+    ChamPulse = true, ChamDistanceFade = true, ChamHealthTint = false,
+    ChamTargetAccent = true, ChamTeamColor = false, ChamMaxDistance = 900,
+    ChamColor = Color3.fromRGB(255, 0, 235), GlowColor = Color3.fromRGB(255, 255, 255),
+    ChamTransparency = 0.35, ChamOutlineTransparency = 0.05,
+    ChamType = "Fill", ChamWireStyle = "Triangulated", ChamWireGlow = true,
+    ChamWireThickness = 1.2, ChamWireLines = 360,
+    
+    -- ESP Drawing
+    Boxes = false, BoxColor = Color3.fromRGB(255, 255, 255),
+    CornerBoxes = false, CornerLength = 10,
+    BoxFill = false, BoxFillColor = Color3.fromRGB(20, 20, 20), BoxFillTransparency = 0.7,
+    Names = false, NameColor = Color3.fromRGB(255, 255, 255),
+    Distance = false, DistanceColor = Color3.fromRGB(200, 200, 200),
+    Tracers = false, TracerColor = Color3.fromRGB(255, 255, 255),
+    HealthBar = false, ESPPreview = false,
+    
+    -- Crosshair
+    CrosshairEnabled = false, CrosshairColor = Color3.fromRGB(0, 255, 0),
+    CrosshairSize = 10, CrosshairThickness = 1, CrosshairGap = 4,
+    DotEnabled = false,
+    
+    -- World
+    Fullbright = false, NoFog = false, CustomTime = false, TimeValue = 14,
+    AmbientColor = Color3.fromRGB(178, 178, 178),
+    -- Post FX
+    BloomEnabled = false, BloomIntensity = 0.6, BloomSize = 24, BloomThreshold = 1,
+    ColorCorrectionEnabled = false, ColorCorrectionContrast = 0.1, ColorCorrectionSaturation = 0.1,
+    ColorCorrectionTint = Color3.fromRGB(255, 255, 255),
+    
+    -- FX
+    RainbowParticles = false,
+    TrailEnabled = false, TrailColor = Color3.fromRGB(0, 200, 255), TrailLifetime = 0.5,
+    AuraEnabled = false, AuraColor = Color3.fromRGB(85, 170, 255),
+    
+    -- Movement
+    SpeedEnabled = false, SpeedValue = 32,
+    FlyEnabled = false, FlySpeed = 50,
+    NoclipEnabled = false, InfJumpEnabled = false,
+    JumpPower = false, JumpValue = 50,
+    
+    -- HUD
+    HUDEnabled = true, HUDWatermark = true,
+    HUDHealth = true, HUDSpeed = true, HUDCoords = true,
+    HUDTarget = true, HUDPlayers = true, HUDFPS = true,
+    HUDArraylist = true, HUDKeybinds = true,
+    HUDStyle = "Glass", HUDCompact = false,
+    UITheme = "Blue",
+    HUDColor = Color3.fromRGB(70, 150, 255),
+    HUDRainbowBars = true,
+    HUDPulseAccent = true,
+    
+    -- Misc
+    AntiAFK = true, ClickTP = false, Notifications = true,
 }
-mGradient.Rotation = 135
 
-local glow = Instance.new("Frame", main)
-glow.BackgroundColor3 = Color3.fromRGB(0, 255, 130); glow.BorderSizePixel = 0
-glow.Size = UDim2.new(1, 0, 0, 2); glow.Position = UDim2.new(0, 0, 0, 44)
-
--- Header
-local header = Instance.new("Frame", main)
-header.BackgroundTransparency = 1
-header.Size = UDim2.new(1, 0, 0, 44)
-
-local title = Instance.new("TextLabel", header)
-title.BackgroundTransparency = 1
-title.Position = UDim2.new(0, 14, 0, 0); title.Size = UDim2.new(1, -60, 1, 0)
-title.Font = Enum.Font.GothamBlack; title.Text = "⬛ SH RGB ⬛"
-title.TextSize = 20; title.TextColor3 = Color3.fromRGB(0, 255, 130)
-title.TextXAlignment = Enum.TextXAlignment.Left
-
-local closeBtn = Instance.new("TextButton", header)
-closeBtn.AnchorPoint = Vector2.new(1, 0.5)
-closeBtn.Position = UDim2.new(1, -10, 0.5, 0); closeBtn.Size = UDim2.new(0, 28, 0, 28)
-closeBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30); closeBtn.BorderSizePixel = 0
-closeBtn.Font = Enum.Font.GothamBold; closeBtn.Text = "X"
-closeBtn.TextSize = 16; closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
-
--- Drag main
-do
-    local dragging, dragStart, startPos = false, nil, nil
-    header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true; dragStart = input.Position; startPos = main.Position
+local Settings = setmetatable({}, {
+    __index = SettingsData,
+    __newindex = function(_, key, value)
+        SettingsData[key] = value
+        if not IsLoading and QueueSave then
+            QueueSave()
         end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-    header.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
-    end)
-end
+    end
+})
 
-----------------------------------------------------------------
--- Body with slots
-----------------------------------------------------------------
-local body = Instance.new("Frame", main)
-body.Position = UDim2.new(0, 12, 0, 56); body.Size = UDim2.new(1, -24, 1, -68)
-body.BackgroundTransparency = 1
-
-local list = Instance.new("UIListLayout", body)
-list.Padding = UDim.new(0, 10)
-list.SortOrder = Enum.SortOrder.LayoutOrder
-
-local Remote = ReplicatedStorage:FindFirstChild("ApplyTitle")
-local activeLoops = {}
-
-local function makeSlot(index, defaultText)
-    local row = Instance.new("Frame", body)
-    row.LayoutOrder = index
-    row.Size = UDim2.new(1, 0, 0, 42); row.BackgroundTransparency = 1
-
-    local box = Instance.new("TextBox", row)
-    box.Size = UDim2.new(1, -100, 1, 0); box.Position = UDim2.new(0, 0, 0, 0)
-    box.BackgroundColor3 = Color3.fromRGB(10, 22, 14); box.BackgroundTransparency = 0.15
-    box.BorderSizePixel = 0
-    box.Text = defaultText; box.PlaceholderText = "اكتب النص..."
-    box.TextColor3 = Color3.fromRGB(220, 255, 230); box.PlaceholderColor3 = Color3.fromRGB(120, 160, 130)
-    box.Font = Enum.Font.GothamSemibold; box.TextSize = 14
-    box.ClearTextOnFocus = false
-    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 8)
-    local bs = Instance.new("UIStroke", box)
-    bs.Color = Color3.fromRGB(0, 200, 100); bs.Thickness = 1; bs.Transparency = 0.5
-
-    local btn = Instance.new("TextButton", row)
-    btn.AnchorPoint = Vector2.new(1, 0)
-    btn.Position = UDim2.new(1, 0, 0, 0); btn.Size = UDim2.new(0, 92, 1, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(0, 170, 80); btn.BorderSizePixel = 0
-    btn.Font = Enum.Font.GothamBold; btn.Text = "تشغيل"
-    btn.TextSize = 14; btn.TextColor3 = Color3.fromRGB(0, 0, 0)
-    btn.AutoButtonColor = false
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-    local bts = Instance.new("UIStroke", btn)
-    bts.Color = Color3.fromRGB(0, 255, 130); bts.Thickness = 1; bts.Transparency = 0.3
-
-    btn.MouseButton1Click:Connect(function()
-        if activeLoops[index] then
-            activeLoops[index] = false
-            btn.Text = "تشغيل"
-            btn.BackgroundColor3 = Color3.fromRGB(0, 170, 80)
-            bts.Color = Color3.fromRGB(0, 255, 130)
-        else
-            if not Remote then
-                Remote = ReplicatedStorage:FindFirstChild("ApplyTitle")
-            end
-            activeLoops[index] = true
-            btn.Text = "إيقاف"
-            btn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
-            bts.Color = Color3.fromRGB(255, 80, 80)
-
-            task.spawn(function()
-                while activeLoops[index] do
-                    local dynamicColor = Color3.fromHSV(tick() % 5 / 5, 1, 1)
-                    pcall(function()
-                        if Remote then Remote:FireServer(box.Text, dynamicColor) end
-                    end)
-                    task.wait(0.2)
-                end
-            end)
-        end
-    end)
-end
-
-makeSlot(1, "SH ON TOP")
-makeSlot(2, "HAHAHAHA")
-makeSlot(3, "SHAHAD WAS HERE")
-
-----------------------------------------------------------------
--- Mini draggable bubble
-----------------------------------------------------------------
-local miniGui = Instance.new("ScreenGui")
-miniGui.Name = "SHRGBMini"; miniGui.ResetOnSpawn = false; miniGui.IgnoreGuiInset = true
-miniGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; miniGui.DisplayOrder = 9001
-pcall(function() miniGui.Parent = guiParent end)
-if not miniGui.Parent then miniGui.Parent = PlayerGui end
-
-local miniBubble = Instance.new("TextButton", miniGui)
-miniBubble.AnchorPoint = Vector2.new(0, 0.5)
-miniBubble.Position = UDim2.new(0, 14, 0.35, 0)
-miniBubble.Size = UDim2.new(0, 48, 0, 48)
-miniBubble.BackgroundColor3 = Color3.fromRGB(150, 60, 200)
-miniBubble.BackgroundTransparency = 0.1; miniBubble.BorderSizePixel = 0
-miniBubble.AutoButtonColor = false
-miniBubble.Text = "🌈"
-miniBubble.Font = Enum.Font.GothamBlack
-miniBubble.TextSize = 22
-miniBubble.TextColor3 = Color3.fromRGB(255, 255, 255)
-Instance.new("UICorner", miniBubble).CornerRadius = UDim.new(0, 10)
-local mbStroke = Instance.new("UIStroke", miniBubble)
-mbStroke.Color = Color3.fromRGB(220, 120, 255); mbStroke.Thickness = 2; mbStroke.Transparency = 0.1
-
-local mbGrad = Instance.new("UIGradient", miniBubble)
-mbGrad.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 80, 230)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(90, 30, 150)),
+-- [РЎРћРҐР РђРќР•РќРР• РћР РР“РРќРђР›Р¬РќР«РҐ Р—РќРђР§Р•РќРР™]
+local OriginalLighting = {
+    Brightness = Lighting.Brightness,
+    ClockTime = Lighting.ClockTime,
+    FogEnd = Lighting.FogEnd,
+    FogStart = Lighting.FogStart,
+    GlobalShadows = Lighting.GlobalShadows,
+    Ambient = Lighting.Ambient,
+    OutdoorAmbient = Lighting.OutdoorAmbient,
 }
-mbGrad.Rotation = 135
 
--- color cycling animation (RGB style to differentiate from green SH)
-task.spawn(function()
-    local t = 0
-    while miniBubble.Parent do
-        t = t + 0.05
+local function CopySettings(src)
+    local dst = {}
+    for k, v in pairs(src) do
+        dst[k] = v
+    end
+    return dst
+end
+
+local DefaultSettings = CopySettings(SettingsData)
+
+local Config = {
+    Profile = "default",
+    AutoSave = true,
+    AutoLoad = true,
+}
+
+local CONFIG_DIR = "FlickSpeed"
+local CONFIG_VERSION = 1
+local pendingSave = false
+local ConfigLoaded = false
+
+local function SanitizeProfile(name)
+    name = tostring(name or "")
+    name = name:gsub("[^%w%-%_ ]", "")
+    name = name:gsub("%s+", "_")
+    return name
+end
+
+local function GetConfigPath()
+    local profile = SanitizeProfile(Config.Profile)
+    if profile == "" then
+        profile = "default"
+    end
+    return CONFIG_DIR .. "/" .. profile .. ".json"
+end
+
+local function EncodeValue(v)
+    if typeof(v) == "Color3" then
+        return { __type = "Color3", r = v.R, g = v.G, b = v.B }
+    end
+    return v
+end
+
+local function DecodeValue(v)
+    if type(v) == "table" and v.__type == "Color3" then
+        return Color3.new(v.r or 0, v.g or 0, v.b or 0)
+    end
+    return v
+end
+
+local function TableHasValue(list, value)
+    for _, v in ipairs(list) do
+        if v == value then
+            return true
+        end
+    end
+    return false
+end
+
+local function SaveConfig()
+    if not writefile then return false, "writefile unavailable" end
+    if makefolder and not isfolder(CONFIG_DIR) then
+        makefolder(CONFIG_DIR)
+    end
+    local data = { __version = CONFIG_VERSION }
+    for k, v in pairs(SettingsData) do
+        data[k] = EncodeValue(v)
+    end
+    local ok, json = pcall(function()
+        return HttpService:JSONEncode(data)
+    end)
+    if not ok then return false, "encode failed" end
+    local ok2, err = pcall(function()
+        writefile(GetConfigPath(), json)
+    end)
+    if not ok2 then return false, err end
+    return true
+end
+
+local function LoadConfig()
+    if not readfile or not isfile then return false, "readfile unavailable" end
+    local path = GetConfigPath()
+    if not isfile(path) then return false, "missing" end
+    local ok, data = pcall(function()
+        return HttpService:JSONDecode(readfile(path))
+    end)
+    if not ok or type(data) ~= "table" then return false, "decode failed" end
+    IsLoading = true
+    for k, v in pairs(data) do
+        if k ~= "__version" and k ~= "UseNamecallHook" and SettingsData[k] ~= nil then
+            SettingsData[k] = DecodeValue(v)
+        end
+    end
+    SettingsData.UseNamecallHook = false
+    if not TableHasValue({"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"}, SettingsData.HitPart) then
+        SettingsData.HitPart = "Head"
+    end
+    if not TableHasValue({"Fill", "Outline", "Flat", "Wireframe", "Fill+Wireframe", "TriFill", "TriMesh"}, SettingsData.ChamType) then
+        SettingsData.ChamType = "Fill"
+    end
+    if not TableHasValue({"Triangulated", "Grid", "Edges"}, SettingsData.ChamWireStyle) then
+        SettingsData.ChamWireStyle = "Triangulated"
+    end
+    if not TableHasValue({"Blue", "White", "Green"}, SettingsData.UITheme) then
+        SettingsData.UITheme = "Blue"
+    end
+    if not TableHasValue({"Glass", "Minimal", "Contrast"}, SettingsData.HUDStyle) then
+        SettingsData.HUDStyle = "Glass"
+    end
+    SettingsData.ChamWireLines = math.clamp(tonumber(SettingsData.ChamWireLines) or 360, 24, 600)
+    SettingsData.ChamWireThickness = math.clamp(tonumber(SettingsData.ChamWireThickness) or 1.2, 0.5, 5)
+    SettingsData.ChamTransparency = math.clamp(tonumber(SettingsData.ChamTransparency) or 0.35, 0, 1)
+    SettingsData.ChamOutlineTransparency = math.clamp(tonumber(SettingsData.ChamOutlineTransparency) or 0.05, 0, 1)
+    SettingsData.ChamMaxDistance = math.clamp(tonumber(SettingsData.ChamMaxDistance) or 900, 0, 2500)
+    IsLoading = false
+    ConfigLoaded = true
+    return true
+end
+
+local ThemePresets = {
+    Blue = {
+        accent = Color3.fromRGB(70, 150, 255),
+        bg = Color3.fromRGB(10, 16, 28),
+        card = Color3.fromRGB(14, 24, 42),
+        text = Color3.fromRGB(236, 245, 255),
+        subtext = Color3.fromRGB(180, 205, 232),
+    },
+    White = {
+        accent = Color3.fromRGB(110, 120, 145),
+        bg = Color3.fromRGB(232, 236, 242),
+        card = Color3.fromRGB(244, 247, 252),
+        text = Color3.fromRGB(27, 35, 48),
+        subtext = Color3.fromRGB(78, 90, 108),
+    },
+    Green = {
+        accent = Color3.fromRGB(70, 215, 140),
+        bg = Color3.fromRGB(12, 26, 18),
+        card = Color3.fromRGB(17, 35, 25),
+        text = Color3.fromRGB(226, 250, 234),
+        subtext = Color3.fromRGB(164, 205, 176),
+    }
+}
+
+local function GetTheme()
+    return ThemePresets[SettingsData.UITheme] or ThemePresets.Blue
+end
+
+local function ApplyTheme(themeName)
+    if ThemePresets[themeName] then
+        Settings.UITheme = themeName
+        Settings.HUDColor = ThemePresets[themeName].accent
+    end
+end
+
+local function ResetSettings()
+    IsLoading = true
+    for k, v in pairs(DefaultSettings) do
+        SettingsData[k] = v
+    end
+    IsLoading = false
+end
+
+QueueSave = function()
+    if IsLoading or not Config.AutoSave then return end
+    if pendingSave then return end
+    pendingSave = true
+    task.delay(0.6, function()
+        pendingSave = false
+        if not IsLoading and Config.AutoSave then
+            SaveConfig()
+        end
+    end)
+end
+
+local UIControls = {}
+local function RegisterControl(key, control)
+    if key and control then
+        UIControls[key] = control
+    end
+    return control
+end
+
+local function SafeSet(control, value)
+    if not control then return end
+    local ok = pcall(function() control:Set(value) end)
+    if ok then return end
+    ok = pcall(function() control:SetValue(value) end)
+    if ok then return end
+    pcall(function() control:SetColor(value) end)
+end
+
+local function SyncUI()
+    IsLoading = true
+    for key, control in pairs(UIControls) do
+        if SettingsData[key] ~= nil then
+            SafeSet(control, SettingsData[key])
+        end
+    end
+    IsLoading = false
+end
+
+if Config.AutoLoad then
+    pcall(function()
+        LoadConfig()
+    end)
+end
+
+local BloomEffect = Lighting:FindFirstChild("FlickBloom")
+local ColorCorrectionEffect = Lighting:FindFirstChild("FlickColorCorrection")
+
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+--  UI WINDOW
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+local Window = Library:Window({
+    Name = "FlickSpeed",
+    SubName = "Private | v3.0",
+    Logo = "120959262762131"
+})
+
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+--  PAGE 1: COMBAT
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+local CombatPage = Window:Page({Name = "Combat"})
+
+-- Silent Aim
+local AimSec = CombatPage:Section({Name = "Silent Aim"})
+RegisterControl("Enabled", AimSec:Toggle({Name = "Enable", Default = Settings.Enabled, Callback = function(v) Settings.Enabled = v end}))
+RegisterControl("SilentAim", AimSec:Toggle({Name = "Silent Aim Mode", Default = Settings.SilentAim, Callback = function(v) Settings.SilentAim = v end}))
+AimSec:Label("Namecall hook disabled (anti-detect)")
+RegisterControl("WallCheck", AimSec:Toggle({Name = "Wall Check", Default = Settings.WallCheck, Callback = function(v) Settings.WallCheck = v end}))
+RegisterControl("TeamCheck", AimSec:Toggle({Name = "Team Check", Default = Settings.TeamCheck, Callback = function(v) Settings.TeamCheck = v end}))
+RegisterControl("FOV", AimSec:Slider({Name = "FOV Radius", Min = 30, Max = 1000, Default = Settings.FOV, Callback = function(v) Settings.FOV = v end}))
+RegisterControl("HitPart", AimSec:Dropdown({Name = "Hit Part", Default = Settings.HitPart, Items = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"}, Callback = function(v) Settings.HitPart = v end}))
+RegisterControl("ShotDelay", AimSec:Slider({Name = "Shot Delay", Min = 0, Max = 0.2, Default = Settings.ShotDelay, Decimals = 0.01, Callback = function(v) Settings.ShotDelay = v end}))
+RegisterControl("SilentExtraLead", AimSec:Slider({Name = "Silent Extra Lead", Min = 0, Max = 0.2, Default = Settings.SilentExtraLead, Decimals = 0.005, Callback = function(v) Settings.SilentExtraLead = v end}))
+RegisterControl("SilentForceShot", AimSec:Toggle({Name = "Silent Force Shot", Default = Settings.SilentForceShot, Callback = function(v) Settings.SilentForceShot = v end}))
+
+-- Hitbox Manipulation
+local HitboxSec = CombatPage:Section({Name = "Hitbox Sink (Anti-Aim)"})
+RegisterControl("HitboxSink", HitboxSec:Toggle({Name = "Hitbox Sink", Default = Settings.HitboxSink, Callback = function(v) Settings.HitboxSink = v
+    if not v then
         pcall(function()
-            mbStroke.Color = Color3.fromHSV(t % 1, 1, 1)
+            local char = Player.Character
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                        part.LocalTransparencyModifier = 0
+                    end
+                end
+            end
         end)
-        task.wait(0.05)
+    end
+end}))
+RegisterControl("HitboxSinkDepth", HitboxSec:Slider({Name = "Sink Depth (studs)", Min = 5, Max = 50, Default = Settings.HitboxSinkDepth, Callback = function(v) Settings.HitboxSinkDepth = v end}))
+RegisterControl("HitboxDesync", HitboxSec:Toggle({Name = "Hitbox Desync (Jitter)", Default = Settings.HitboxDesync, Callback = function(v) Settings.HitboxDesync = v end}))
+RegisterControl("HitboxDesyncOffset", HitboxSec:Slider({Name = "Desync Offset", Min = 3, Max = 30, Default = Settings.HitboxDesyncOffset, Callback = function(v) Settings.HitboxDesyncOffset = v end}))
+
+-- Smoothing
+local SmoothSec = CombatPage:Section({Name = "Aim Assist (Legit)"})
+RegisterControl("Smoothing", SmoothSec:Toggle({Name = "Smoothing", Default = Settings.Smoothing, Callback = function(v) Settings.Smoothing = v end}))
+RegisterControl("SmoothFactor", SmoothSec:Slider({Name = "Smooth Factor", Min = 1, Max = 20, Default = Settings.SmoothFactor, Callback = function(v) Settings.SmoothFactor = v end}))
+RegisterControl("Prediction", SmoothSec:Toggle({Name = "Prediction", Default = Settings.Prediction, Callback = function(v) Settings.Prediction = v end}))
+RegisterControl("PredictionAmount", SmoothSec:Slider({Name = "Prediction Amount", Min = 0.05, Max = 0.5, Default = Settings.PredictionAmount, Decimals = 0.01, Callback = function(v) Settings.PredictionAmount = v end}))
+
+-- Triggerbot
+local TriggerSec = CombatPage:Section({Name = "Triggerbot"})
+RegisterControl("AutoFire", TriggerSec:Toggle({Name = "Auto Fire", Default = Settings.AutoFire, Callback = function(v) Settings.AutoFire = v end}))
+RegisterControl("TriggerBot", TriggerSec:Toggle({Name = "Triggerbot", Default = Settings.TriggerBot, Callback = function(v) Settings.TriggerBot = v end}))
+RegisterControl("TriggerDelay", TriggerSec:Slider({Name = "Trigger Delay", Min = 0, Max = 0.3, Default = Settings.TriggerDelay, Decimals = 0.01, Callback = function(v) Settings.TriggerDelay = v end}))
+
+-- Target Visuals
+local TargetVisSec = CombatPage:Section({Name = "Target Visuals"})
+RegisterControl("ShowFOV", TargetVisSec:Toggle({Name = "Show FOV Circle", Default = Settings.ShowFOV, Callback = function(v) Settings.ShowFOV = v end}))
+RegisterControl("FOVColor", TargetVisSec:Label("FOV Color"):Colorpicker({Default = Settings.FOVColor, Callback = function(v) Settings.FOVColor = v end}))
+RegisterControl("TargetESP", TargetVisSec:Toggle({Name = "Target ESP (Circle)", Default = Settings.TargetESP, Callback = function(v) Settings.TargetESP = v end}))
+RegisterControl("TargetTracer", TargetVisSec:Toggle({Name = "Target Tracer", Default = Settings.TargetTracer, Callback = function(v) Settings.TargetTracer = v end}))
+RegisterControl("TargetPanel", TargetVisSec:Toggle({Name = "Target Panel", Default = Settings.TargetPanel, Callback = function(v) Settings.TargetPanel = v end}))
+RegisterControl("TargetColor", TargetVisSec:Label("Target Color"):Colorpicker({Default = Settings.TargetColor, Callback = function(v) Settings.TargetColor = v end}))
+RegisterControl("RaycastVisuals", TargetVisSec:Toggle({Name = "Raycast Visuals", Default = Settings.RaycastVisuals, Callback = function(v) Settings.RaycastVisuals = v end}))
+RegisterControl("RaycastMaxLines", TargetVisSec:Slider({Name = "Raycast Max Lines", Min = 1, Max = 12, Default = Settings.RaycastMaxLines, Callback = function(v) Settings.RaycastMaxLines = v end}))
+RegisterControl("RaycastShowCount", TargetVisSec:Toggle({Name = "Show Raycast Count", Default = Settings.RaycastShowCount, Callback = function(v) Settings.RaycastShowCount = v end}))
+RegisterControl("RaycastColor", TargetVisSec:Label("Raycast Color"):Colorpicker({Default = Settings.RaycastColor, Callback = function(v) Settings.RaycastColor = v end}))
+
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+--  PAGE 2: VISUALS
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+local VisualPage = Window:Page({Name = "Visuals"})
+
+local PlayerSec = VisualPage:Section({Name = "Player Chams"})
+RegisterControl("ChamsEnabled", PlayerSec:Toggle({Name = "Chams", Default = Settings.ChamsEnabled, Callback = function(v) Settings.ChamsEnabled = v end}))
+RegisterControl("ChamType", PlayerSec:Dropdown({Name = "Chams Type", Default = Settings.ChamType, Items = {"Fill", "Outline", "Flat", "Wireframe", "Fill+Wireframe", "TriFill", "TriMesh"}, Callback = function(v) Settings.ChamType = v end}))
+RegisterControl("ChamTransparency", PlayerSec:Slider({Name = "Fill Transparency", Min = 0, Max = 1, Default = Settings.ChamTransparency, Decimals = 0.1, Callback = function(v) Settings.ChamTransparency = v end}))
+RegisterControl("ChamOutlineTransparency", PlayerSec:Slider({Name = "Outline Transparency", Min = 0, Max = 1, Default = Settings.ChamOutlineTransparency, Decimals = 0.1, Callback = function(v) Settings.ChamOutlineTransparency = v end}))
+RegisterControl("ChamWireStyle", PlayerSec:Dropdown({Name = "Wire Style", Default = Settings.ChamWireStyle, Items = {"Triangulated", "Grid", "Edges"}, Callback = function(v) Settings.ChamWireStyle = v end}))
+RegisterControl("ChamWireThickness", PlayerSec:Slider({Name = "Wire Thickness", Min = 0.5, Max = 5, Default = Settings.ChamWireThickness, Decimals = 0.1, Callback = function(v) Settings.ChamWireThickness = v end}))
+RegisterControl("ChamWireLines", PlayerSec:Slider({Name = "Wireframe Lines", Min = 24, Max = 600, Default = Settings.ChamWireLines, Decimals = 12, Callback = function(v) Settings.ChamWireLines = v end}))
+RegisterControl("ChamWireGlow", PlayerSec:Toggle({Name = "Wire Glow", Default = Settings.ChamWireGlow, Callback = function(v) Settings.ChamWireGlow = v end}))
+RegisterControl("ChamPulse", PlayerSec:Toggle({Name = "Soft Pulse", Default = Settings.ChamPulse, Callback = function(v) Settings.ChamPulse = v end}))
+RegisterControl("ChamDistanceFade", PlayerSec:Toggle({Name = "Distance Fade", Default = Settings.ChamDistanceFade, Callback = function(v) Settings.ChamDistanceFade = v end}))
+RegisterControl("ChamHealthTint", PlayerSec:Toggle({Name = "Health Tint", Default = Settings.ChamHealthTint, Callback = function(v) Settings.ChamHealthTint = v end}))
+RegisterControl("ChamTargetAccent", PlayerSec:Toggle({Name = "Target Accent", Default = Settings.ChamTargetAccent, Callback = function(v) Settings.ChamTargetAccent = v end}))
+RegisterControl("ChamTeamColor", PlayerSec:Toggle({Name = "Team Color", Default = Settings.ChamTeamColor, Callback = function(v) Settings.ChamTeamColor = v end}))
+RegisterControl("ChamMaxDistance", PlayerSec:Slider({Name = "Max Distance", Min = 0, Max = 2500, Default = Settings.ChamMaxDistance, Callback = function(v) Settings.ChamMaxDistance = v end}))
+RegisterControl("ChamColor", PlayerSec:Label("Chams Color"):Colorpicker({Default = Settings.ChamColor, Callback = function(v) Settings.ChamColor = v end}))
+RegisterControl("GlowEnabled", PlayerSec:Toggle({Name = "Glow (Outline)", Default = Settings.GlowEnabled, Callback = function(v) Settings.GlowEnabled = v end}))
+RegisterControl("RainbowGlow", PlayerSec:Toggle({Name = "Rainbow Glow", Default = Settings.RainbowGlow, Callback = function(v) Settings.RainbowGlow = v end}))
+RegisterControl("GlowColor", PlayerSec:Label("Glow Color"):Colorpicker({Default = Settings.GlowColor, Callback = function(v) Settings.GlowColor = v end}))
+PlayerSec:Button({Name = "Photo Wire Preset", Callback = function()
+    Settings.ChamsEnabled = true
+    Settings.ChamType = "Wireframe"
+    Settings.ChamWireStyle = "Triangulated"
+    Settings.ChamWireGlow = true
+    Settings.ChamWireLines = 520
+    Settings.ChamWireThickness = 1
+    Settings.ChamTransparency = 0.4
+    Settings.ChamOutlineTransparency = 0
+    Settings.ChamHealthTint = false
+    Settings.ChamTargetAccent = false
+    Settings.ChamTeamColor = false
+    Settings.ChamColor = Color3.fromRGB(255, 0, 235)
+    Settings.GlowEnabled = false
+    Settings.RainbowGlow = false
+    Settings.GlowColor = Color3.fromRGB(255, 255, 255)
+    SyncUI()
+end})
+
+local ESPSec = VisualPage:Section({Name = "ESP (Drawing)"})
+RegisterControl("Boxes", ESPSec:Toggle({Name = "Boxes", Default = Settings.Boxes, Callback = function(v) Settings.Boxes = v end}))
+RegisterControl("CornerBoxes", ESPSec:Toggle({Name = "Corner Boxes", Default = Settings.CornerBoxes, Callback = function(v) Settings.CornerBoxes = v end}))
+RegisterControl("CornerLength", ESPSec:Slider({Name = "Corner Length", Min = 4, Max = 30, Default = Settings.CornerLength, Callback = function(v) Settings.CornerLength = v end}))
+RegisterControl("BoxColor", ESPSec:Label("Box Color"):Colorpicker({Default = Settings.BoxColor, Callback = function(v) Settings.BoxColor = v end}))
+RegisterControl("BoxFill", ESPSec:Toggle({Name = "Box Fill", Default = Settings.BoxFill, Callback = function(v) Settings.BoxFill = v end}))
+RegisterControl("BoxFillTransparency", ESPSec:Slider({Name = "Fill Transparency", Min = 0, Max = 1, Default = Settings.BoxFillTransparency, Decimals = 0.05, Callback = function(v) Settings.BoxFillTransparency = v end}))
+RegisterControl("BoxFillColor", ESPSec:Label("Fill Color"):Colorpicker({Default = Settings.BoxFillColor, Callback = function(v) Settings.BoxFillColor = v end}))
+RegisterControl("Names", ESPSec:Toggle({Name = "Names", Default = Settings.Names, Callback = function(v) Settings.Names = v end}))
+RegisterControl("NameColor", ESPSec:Label("Name Color"):Colorpicker({Default = Settings.NameColor, Callback = function(v) Settings.NameColor = v end}))
+RegisterControl("Distance", ESPSec:Toggle({Name = "Distance", Default = Settings.Distance, Callback = function(v) Settings.Distance = v end}))
+RegisterControl("DistanceColor", ESPSec:Label("Distance Color"):Colorpicker({Default = Settings.DistanceColor, Callback = function(v) Settings.DistanceColor = v end}))
+RegisterControl("Tracers", ESPSec:Toggle({Name = "Tracers", Default = Settings.Tracers, Callback = function(v) Settings.Tracers = v end}))
+RegisterControl("TracerColor", ESPSec:Label("Tracer Color"):Colorpicker({Default = Settings.TracerColor, Callback = function(v) Settings.TracerColor = v end}))
+RegisterControl("HealthBar", ESPSec:Toggle({Name = "Health Bar", Default = Settings.HealthBar, Callback = function(v) Settings.HealthBar = v end}))
+RegisterControl("ESPPreview", ESPSec:Toggle({Name = "ESP Preview", Default = Settings.ESPPreview, Callback = function(v) Settings.ESPPreview = v end}))
+
+-- Crosshair
+local CrossSec = VisualPage:Section({Name = "Crosshair"})
+RegisterControl("CrosshairEnabled", CrossSec:Toggle({Name = "Custom Crosshair", Default = Settings.CrosshairEnabled, Callback = function(v) Settings.CrosshairEnabled = v end}))
+RegisterControl("DotEnabled", CrossSec:Toggle({Name = "Center Dot", Default = Settings.DotEnabled, Callback = function(v) Settings.DotEnabled = v end}))
+RegisterControl("CrosshairColor", CrossSec:Label("Crosshair Color"):Colorpicker({Default = Settings.CrosshairColor, Callback = function(v) Settings.CrosshairColor = v end}))
+RegisterControl("CrosshairSize", CrossSec:Slider({Name = "Size", Min = 4, Max = 30, Default = Settings.CrosshairSize, Callback = function(v) Settings.CrosshairSize = v end}))
+RegisterControl("CrosshairGap", CrossSec:Slider({Name = "Gap", Min = 0, Max = 15, Default = Settings.CrosshairGap, Callback = function(v) Settings.CrosshairGap = v end}))
+RegisterControl("CrosshairThickness", CrossSec:Slider({Name = "Thickness", Min = 1, Max = 4, Default = Settings.CrosshairThickness, Callback = function(v) Settings.CrosshairThickness = v end}))
+
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+--  PAGE 3: WORLD
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+local WorldPage = Window:Page({Name = "World"})
+
+local LightSec = WorldPage:Section({Name = "Lighting"})
+RegisterControl("Fullbright", LightSec:Toggle({Name = "Fullbright", Default = Settings.Fullbright, Callback = function(v)
+    Settings.Fullbright = v
+    if not v then
+        Lighting.Brightness = OriginalLighting.Brightness
+        Lighting.ClockTime = OriginalLighting.ClockTime
+        Lighting.GlobalShadows = OriginalLighting.GlobalShadows
+        Lighting.Ambient = OriginalLighting.Ambient
+    end
+end}))
+RegisterControl("NoFog", LightSec:Toggle({Name = "No Fog", Default = Settings.NoFog, Callback = function(v)
+    Settings.NoFog = v
+    if not v then
+        Lighting.FogEnd = OriginalLighting.FogEnd
+        Lighting.FogStart = OriginalLighting.FogStart
+    end
+end}))
+RegisterControl("CustomTime", LightSec:Toggle({Name = "Custom Time", Default = Settings.CustomTime, Callback = function(v) Settings.CustomTime = v if not v then Lighting.ClockTime = OriginalLighting.ClockTime end end}))
+RegisterControl("TimeValue", LightSec:Slider({Name = "Time of Day", Min = 0, Max = 24, Default = Settings.TimeValue, Decimals = 0.5, Callback = function(v) Settings.TimeValue = v end}))
+RegisterControl("AmbientColor", LightSec:Label("Ambient Color"):Colorpicker({Default = Settings.AmbientColor, Callback = function(v) Settings.AmbientColor = v end}))
+
+local FXSec = WorldPage:Section({Name = "Post Processing"})
+RegisterControl("BloomEnabled", FXSec:Toggle({Name = "Bloom", Default = Settings.BloomEnabled, Callback = function(v) Settings.BloomEnabled = v end}))
+RegisterControl("BloomIntensity", FXSec:Slider({Name = "Bloom Intensity", Min = 0, Max = 3, Default = Settings.BloomIntensity, Decimals = 0.1, Callback = function(v) Settings.BloomIntensity = v end}))
+RegisterControl("BloomSize", FXSec:Slider({Name = "Bloom Size", Min = 0, Max = 56, Default = Settings.BloomSize, Callback = function(v) Settings.BloomSize = v end}))
+RegisterControl("BloomThreshold", FXSec:Slider({Name = "Bloom Threshold", Min = 0, Max = 2, Default = Settings.BloomThreshold, Decimals = 0.05, Callback = function(v) Settings.BloomThreshold = v end}))
+RegisterControl("ColorCorrectionEnabled", FXSec:Toggle({Name = "Color Correction", Default = Settings.ColorCorrectionEnabled, Callback = function(v) Settings.ColorCorrectionEnabled = v end}))
+RegisterControl("ColorCorrectionContrast", FXSec:Slider({Name = "Contrast", Min = -1, Max = 1, Default = Settings.ColorCorrectionContrast, Decimals = 0.05, Callback = function(v) Settings.ColorCorrectionContrast = v end}))
+RegisterControl("ColorCorrectionSaturation", FXSec:Slider({Name = "Saturation", Min = -1, Max = 1, Default = Settings.ColorCorrectionSaturation, Decimals = 0.05, Callback = function(v) Settings.ColorCorrectionSaturation = v end}))
+RegisterControl("ColorCorrectionTint", FXSec:Label("Tint Color"):Colorpicker({Default = Settings.ColorCorrectionTint, Callback = function(v) Settings.ColorCorrectionTint = v end}))
+
+-- в”Ђв”Ђ CHARACTER FX в”Ђв”Ђ
+local FXCharSec = WorldPage:Section({Name = "Character FX"})
+RegisterControl("RainbowParticles", FXCharSec:Toggle({Name = "Rainbow FX", Default = Settings.RainbowParticles, Callback = function(v) Settings.RainbowParticles = v end}))
+RegisterControl("TrailEnabled", FXCharSec:Toggle({Name = "Character Trail", Default = Settings.TrailEnabled, Callback = function(v) Settings.TrailEnabled = v
+    if not v then pcall(function() for _,obj in pairs(Player.Character:GetDescendants()) do if obj.Name == "FlickTrail" or obj.Name == "FlickTrailA" or obj.Name == "FlickTrailB" then obj:Destroy() end end end) end
+end}))
+RegisterControl("TrailLifetime", FXCharSec:Slider({Name = "Trail Lifetime", Min = 0.1, Max = 3, Default = Settings.TrailLifetime, Decimals = 0.1, Callback = function(v) Settings.TrailLifetime = v end}))
+RegisterControl("TrailColor", FXCharSec:Label("Trail Color"):Colorpicker({Default = Settings.TrailColor, Callback = function(v) Settings.TrailColor = v end}))
+
+RegisterControl("AuraEnabled", FXCharSec:Toggle({Name = "Aura Effect", Default = Settings.AuraEnabled, Callback = function(v) Settings.AuraEnabled = v
+    if not v then pcall(function() for _,obj in pairs(Player.Character:GetDescendants()) do if obj.Name == "FlickAura" then obj:Destroy() end end end) end
+end}))
+RegisterControl("AuraColor", FXCharSec:Label("Aura Color"):Colorpicker({Default = Settings.AuraColor, Callback = function(v) Settings.AuraColor = v end}))
+
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+--  PAGE 4: MOVEMENT
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+local MovePage = Window:Page({Name = "Movement"})
+
+local SpeedSec = MovePage:Section({Name = "Speed"})
+RegisterControl("SpeedEnabled", SpeedSec:Toggle({Name = "Speed Hack", Default = Settings.SpeedEnabled, Callback = function(v) Settings.SpeedEnabled = v
+    if not v then pcall(function() local h = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") if h then h.WalkSpeed = 16 end end) end
+end}))
+RegisterControl("SpeedValue", SpeedSec:Slider({Name = "Walk Speed", Min = 16, Max = 200, Default = Settings.SpeedValue, Callback = function(v) Settings.SpeedValue = v end}))
+
+local JumpSec = MovePage:Section({Name = "Jump"})
+RegisterControl("JumpPower", JumpSec:Toggle({Name = "Custom Jump Power", Default = Settings.JumpPower, Callback = function(v) Settings.JumpPower = v
+    if not v then pcall(function() local h = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") if h then h.JumpPower = 50 end end) end
+end}))
+RegisterControl("JumpValue", JumpSec:Slider({Name = "Jump Power", Min = 50, Max = 300, Default = Settings.JumpValue, Callback = function(v) Settings.JumpValue = v end}))
+RegisterControl("InfJumpEnabled", JumpSec:Toggle({Name = "Infinite Jump", Default = Settings.InfJumpEnabled, Callback = function(v) Settings.InfJumpEnabled = v end}))
+
+local FlySec = MovePage:Section({Name = "Fly & Noclip"})
+RegisterControl("FlyEnabled", FlySec:Toggle({Name = "Fly (Space + WASD)", Default = Settings.FlyEnabled, Callback = function(v) Settings.FlyEnabled = v
+    if not v then pcall(function() local hrp = Player.Character:FindFirstChild("HumanoidRootPart")
+        for _, obj in pairs(hrp:GetChildren()) do if obj.Name == "FlickBP" or obj.Name == "FlickBG" then obj:Destroy() end end
+    end) end
+end}))
+RegisterControl("FlySpeed", FlySec:Slider({Name = "Fly Speed", Min = 10, Max = 200, Default = Settings.FlySpeed, Callback = function(v) Settings.FlySpeed = v end}))
+RegisterControl("NoclipEnabled", FlySec:Toggle({Name = "Noclip", Default = Settings.NoclipEnabled, Callback = function(v)
+    Settings.NoclipEnabled = v
+    if not v then
+        pcall(function()
+            local char = Player.Character
+            if char then
+                for _, p in pairs(char:GetDescendants()) do
+                    if p:IsA("BasePart") then p.CanCollide = true end
+                end
+            end
+        end)
+    end
+end}))
+
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+--  PAGE 5: MISC
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+local MiscPage = Window:Page({Name = "Misc"})
+
+local UtilSec = MiscPage:Section({Name = "Utility"})
+RegisterControl("AntiAFK", UtilSec:Toggle({Name = "Anti-AFK", Default = Settings.AntiAFK, Callback = function(v) Settings.AntiAFK = v end}))
+RegisterControl("ClickTP", UtilSec:Toggle({Name = "Click TP (Ctrl+Click)", Default = Settings.ClickTP, Callback = function(v) Settings.ClickTP = v end}))
+UtilSec:Button({Name = "Rejoin Server", Callback = function() pcall(function() TeleportService:Teleport(game.PlaceId, Player) end) end})
+UtilSec:Button({Name = "Server Hop", Callback = function()
+    pcall(function()
+        local HttpService = game:GetService("HttpService")
+        local data = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
+        for _, s in pairs(data.data) do
+            if s.id ~= game.JobId then TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, Player) break end
+        end
+    end)
+end})
+UtilSec:Button({Name = "Copy Place ID", Callback = function() pcall(function() setclipboard(tostring(game.PlaceId)) end) end})
+UtilSec:Button({Name = "Reset Character", Callback = function() pcall(function() Player.Character:FindFirstChildOfClass("Humanoid").Health = 0 end) end})
+
+-- в”Ђв”Ђ HUD в”Ђв”Ђ
+local HUDSec = MiscPage:Section({Name = "HUD (On-Screen)"})
+RegisterControl("HUDEnabled", HUDSec:Toggle({Name = "Enable HUD", Default = Settings.HUDEnabled, Callback = function(v) Settings.HUDEnabled = v end}))
+RegisterControl("HUDWatermark", HUDSec:Toggle({Name = "Watermark", Default = Settings.HUDWatermark, Callback = function(v) Settings.HUDWatermark = v end}))
+RegisterControl("HUDFPS", HUDSec:Toggle({Name = "FPS Counter", Default = Settings.HUDFPS, Callback = function(v) Settings.HUDFPS = v end}))
+RegisterControl("HUDHealth", HUDSec:Toggle({Name = "Health Bar", Default = Settings.HUDHealth, Callback = function(v) Settings.HUDHealth = v end}))
+RegisterControl("HUDSpeed", HUDSec:Toggle({Name = "Speed Display", Default = Settings.HUDSpeed, Callback = function(v) Settings.HUDSpeed = v end}))
+RegisterControl("HUDCoords", HUDSec:Toggle({Name = "Coordinates", Default = Settings.HUDCoords, Callback = function(v) Settings.HUDCoords = v end}))
+RegisterControl("HUDTarget", HUDSec:Toggle({Name = "Target Info", Default = Settings.HUDTarget, Callback = function(v) Settings.HUDTarget = v end}))
+RegisterControl("HUDPlayers", HUDSec:Toggle({Name = "Player Count", Default = Settings.HUDPlayers, Callback = function(v) Settings.HUDPlayers = v end}))
+RegisterControl("HUDArraylist", HUDSec:Toggle({Name = "Modules List", Default = Settings.HUDArraylist, Callback = function(v) Settings.HUDArraylist = v end}))
+RegisterControl("HUDKeybinds", HUDSec:Toggle({Name = "Keybinds Panel", Default = Settings.HUDKeybinds, Callback = function(v) Settings.HUDKeybinds = v end}))
+RegisterControl("HUDStyle", HUDSec:Dropdown({Name = "HUD Style", Default = Settings.HUDStyle, Items = {"Glass", "Minimal", "Contrast"}, Callback = function(v) Settings.HUDStyle = v end}))
+RegisterControl("HUDCompact", HUDSec:Toggle({Name = "Compact HUD", Default = Settings.HUDCompact, Callback = function(v) Settings.HUDCompact = v end}))
+
+RegisterControl("UITheme", HUDSec:Dropdown({Name = "Theme", Default = Settings.UITheme, Items = {"Blue", "White", "Green"}, Callback = function(v) ApplyTheme(v) end}))
+RegisterControl("HUDColor", HUDSec:Label("HUD Accent Color"):Colorpicker({Default = Settings.HUDColor, Callback = function(v) Settings.HUDColor = v end}))
+RegisterControl("HUDRainbowBars", HUDSec:Toggle({Name = "Rainbow Module Bars", Default = Settings.HUDRainbowBars, Callback = function(v) Settings.HUDRainbowBars = v end}))
+RegisterControl("HUDPulseAccent", HUDSec:Toggle({Name = "Pulse Accent", Default = Settings.HUDPulseAccent, Callback = function(v) Settings.HUDPulseAccent = v end}))
+
+local InfoSec = MiscPage:Section({Name = "Info"})
+InfoSec:Label("Player: " .. Player.DisplayName .. " (@" .. Player.Name .. ")")
+InfoSec:Label("UserID: " .. Player.UserId)
+InfoSec:Label("PlaceID: " .. game.PlaceId)
+InfoSec:Label("Executor: Velocity 0.8.0")
+InfoSec:Label("Script: FlickSpeed v3.5")
+
+local ConfigPage = Window:Page({Name = "Config"})
+local ConfigSec = ConfigPage:Section({Name = "Profiles"})
+ConfigSec:Textbox({Name = "Profile Name", Default = Config.Profile, Placeholder = "default", Finished = true, Callback = function(v)
+    Config.Profile = SanitizeProfile(v)
+end})
+ConfigSec:Toggle({Name = "Auto Load", Default = Config.AutoLoad, Callback = function(v) Config.AutoLoad = v end})
+ConfigSec:Toggle({Name = "Auto Save", Default = Config.AutoSave, Callback = function(v) Config.AutoSave = v end})
+ConfigSec:Button({Name = "Load", Callback = function()
+    if LoadConfig() then
+        SyncUI()
+    end
+end})
+ConfigSec:Button({Name = "Save", Callback = function() SaveConfig() end})
+ConfigSec:Button({Name = "Reset Defaults", Callback = function()
+    ResetSettings()
+    SyncUI()
+end})
+ConfigSec:Label("Config folder: " .. CONFIG_DIR)
+
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+--  DRAWING OBJECTS
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 1; FOVCircle.Filled = false; FOVCircle.NumSides = 64
+
+local TargetLine = Drawing.new("Line")
+TargetLine.Thickness = 1.5
+
+local TargetCircle = Drawing.new("Circle")
+TargetCircle.Thickness = 1.5; TargetCircle.Filled = false; TargetCircle.Radius = 15
+
+-- Target panel (like combat HUD)
+local TargetPanelBG = Drawing.new("Square"); TargetPanelBG.Filled = true; TargetPanelBG.Color = Color3.fromRGB(14, 14, 18); TargetPanelBG.Transparency = 0.25
+local TargetPanelAccent = Drawing.new("Square"); TargetPanelAccent.Filled = true; TargetPanelAccent.Transparency = 0
+local TargetPanelHealthBG = Drawing.new("Square"); TargetPanelHealthBG.Filled = true; TargetPanelHealthBG.Color = Color3.fromRGB(15, 15, 18); TargetPanelHealthBG.Transparency = 0.25
+local TargetPanelHealth = Drawing.new("Square"); TargetPanelHealth.Filled = true; TargetPanelHealth.Transparency = 0
+local TargetPanelName = Drawing.new("Text"); TargetPanelName.Size = 13; TargetPanelName.Font = Drawing.Fonts.Plex; TargetPanelName.Outline = true
+local TargetPanelInfo1 = Drawing.new("Text"); TargetPanelInfo1.Size = 12; TargetPanelInfo1.Font = Drawing.Fonts.Plex; TargetPanelInfo1.Outline = true
+local TargetPanelInfo2 = Drawing.new("Text"); TargetPanelInfo2.Size = 12; TargetPanelInfo2.Font = Drawing.Fonts.Plex; TargetPanelInfo2.Outline = true
+local RaycastCountText = Drawing.new("Text"); RaycastCountText.Size = 13; RaycastCountText.Font = Drawing.Fonts.Plex; RaycastCountText.Outline = true; RaycastCountText.Center = false
+local RaycastLines = {}
+for i = 1, 12 do
+    RaycastLines[i] = Drawing.new("Line")
+    RaycastLines[i].Thickness = 1
+    RaycastLines[i].Transparency = 0.2
+    RaycastLines[i].Visible = false
+end
+
+-- Crosshair lines
+local CrossLines = {}
+for i = 1, 4 do
+    CrossLines[i] = Drawing.new("Line")
+    CrossLines[i].Thickness = 1; CrossLines[i].Visible = false
+end
+local CrossDot = Drawing.new("Circle")
+CrossDot.Filled = true; CrossDot.Radius = 2; CrossDot.Visible = false
+
+-- ESP Cache
+local ESPCache = {}
+local CurrentTarget = nil
+local Connections = {}
+local LastTriggerShot = 0
+local SilentHookReady = false
+local SilentHookAttempted = false
+local RaycastsThisFrame = 0
+local LastRaycastCount = 0
+
+local function GetSilentTargetPosition()
+    if not CurrentTarget then return nil end
+    local targetPos = CurrentTarget.Position
+    local lead = Settings.SilentExtraLead or 0
+    if Settings.Prediction then
+        lead = lead + (Settings.PredictionAmount or 0)
+    end
+    if lead > 0 then
+        local vel = CurrentTarget.AssemblyLinearVelocity or CurrentTarget.Velocity or Vector3.new()
+        targetPos = targetPos + vel * lead
+    end
+    return targetPos
+end
+
+function SetupSilentHook()
+    -- Hard-disabled to avoid namecall detector trips.
+    SilentHookAttempted = true
+    SilentHookReady = false
+end
+
+SetupSilentHook()
+
+local function GetESP(plr)
+    if not ESPCache[plr] then
+        local e = {
+            Box = Drawing.new("Square"),
+            BoxOutline = Drawing.new("Square"),
+            BoxFill = Drawing.new("Square"),
+            Name = Drawing.new("Text"),
+            Distance = Drawing.new("Text"),
+            Tracer = Drawing.new("Line"),
+            HealthBarBG = Drawing.new("Square"),
+            HealthBar = Drawing.new("Square"),
+            Corners = {},
+            WireMesh = {},
+            WireGlow = {},
+            WireTriangles = {},
+            WireParts = {},
+            WirePartsChar = nil,
+            WirePartsRefresh = 0,
+        }
+        e.Box.Thickness = 1; e.Box.Filled = false
+        e.BoxOutline.Thickness = 2; e.BoxOutline.Filled = false; e.BoxOutline.Color = Color3.new(0, 0, 0)
+        e.BoxFill.Filled = true; e.BoxFill.Transparency = 0.7
+        e.Name.Center = true; e.Name.Size = 14; e.Name.Outline = true
+        e.Distance.Center = true; e.Distance.Size = 13; e.Distance.Outline = true
+        e.Tracer.Thickness = 1
+        e.HealthBarBG.Filled = true; e.HealthBarBG.Color = Color3.new(0, 0, 0)
+        e.HealthBar.Filled = true
+        for i = 1, 8 do e.Corners[i] = Drawing.new("Line"); e.Corners[i].Thickness = 1.5 end
+        for i = 1, 720 do
+            local glow = Drawing.new("Line")
+            glow.Thickness = 3.8
+            glow.Transparency = 0.55
+            glow.Visible = false
+            e.WireGlow[i] = glow
+
+            local ln = Drawing.new("Line")
+            ln.Thickness = 1.2
+            ln.Transparency = 0
+            ln.Visible = false
+            e.WireMesh[i] = ln
+        end
+        for i = 1, 720 do
+            local ok, tri = pcall(function()
+                return Drawing.new("Triangle")
+            end)
+            if not ok or not tri then
+                break
+            end
+            tri.Visible = false
+            tri.Filled = true
+            tri.Thickness = 1
+            tri.Transparency = 0.35
+            e.WireTriangles[i] = tri
+        end
+        ESPCache[plr] = e
+    end
+    return ESPCache[plr]
+end
+
+-- Cleanup ESP on player leave
+Players.PlayerRemoving:Connect(function(plr)
+    if ESPCache[plr] then
+        for key, v in pairs(ESPCache[plr]) do
+            if key == "WireParts" or key == "WirePartsChar" or key == "WirePartsRefresh" then
+                -- cached Roblox instances are not drawing objects
+            elseif type(v) == "table" then
+                for _, line in pairs(v) do pcall(function() line:Remove() end) end
+            else pcall(function() v:Remove() end) end
+        end
+        ESPCache[plr] = nil
     end
 end)
 
--- draggable + click-to-toggle
-do
-    local dragging, dragStart, startPos, moved = false, nil, nil, false
-    miniBubble.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true; moved = false
-            dragStart = input.Position; startPos = miniBubble.Position
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+--  CORE FUNCTIONS
+-- в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+
+-- Wall check (Raycast)
+local function IsVisible(targetPart)
+    if not Settings.WallCheck then return true end
+    RaycastsThisFrame = RaycastsThisFrame + 1
+    local params = RaycastParams.new()
+    params.FilterDescendantsInstances = {Camera, Player.Character}
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    params.IgnoreWater = true
+    local cast = workspace:Raycast(Camera.CFrame.Position, targetPart.Position - Camera.CFrame.Position, params)
+    if cast and cast.Instance then return cast.Instance:IsDescendantOf(targetPart.Parent) end
+    return true
+end
+
+-- Team check
+local function IsEnemy(plr)
+    if not Settings.TeamCheck then return true end
+    if plr.Team ~= nil and Player.Team ~= nil then
+        return plr.Team ~= Player.Team
+    end
+    if plr.TeamColor ~= nil and Player.TeamColor ~= nil then
+        return plr.TeamColor ~= Player.TeamColor
+    end
+    return true
+end
+
+local function FireMouseClick()
+    local fired = false
+
+    pcall(function()
+        if mouse1click then
+            mouse1click()
+            fired = true
         end
     end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            if delta.Magnitude > 4 then moved = true end
-            miniBubble.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-    miniBubble.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-            if not moved then
-                main.Visible = not main.Visible
+
+    if not fired then
+        pcall(function()
+            if mouse1press and mouse1release then
+                mouse1press()
+                task.wait()
+                mouse1release()
+                fired = true
             end
+        end)
+    end
+
+    if not fired then
+        pcall(function()
+            local vim = game:GetService("VirtualInputManager")
+            local m = UIS:GetMouseLocation()
+            vim:SendMouseButtonEvent(m.X, m.Y, 0, true, game, 0)
+            vim:SendMouseButtonEvent(m.X, m.Y, 0, false, game, 0)
+            fired = true
+        end)
+    end
+
+    if not fired then
+        pcall(function()
+            local vu = game:GetService("VirtualUser")
+            vu:Button1Down(Vector2.new(0, 0), Camera.CFrame)
+            task.wait()
+            vu:Button1Up(Vector2.new(0, 0), Camera.CFrame)
+            fired = true
+        end)
+    end
+
+    pcall(function()
+        local char = Player.Character
+        if not char then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local tool = char:FindFirstChildOfClass("Tool")
+        if not tool then
+            local backpack = Player:FindFirstChildOfClass("Backpack")
+            if backpack then
+                tool = backpack:FindFirstChildOfClass("Tool")
+                if tool and hum then
+                    hum:EquipTool(tool)
+                end
+            end
+        end
+        if tool then
+            tool:Activate()
         end
     end)
 end
 
-closeBtn.MouseButton1Click:Connect(function()
-    pcall(function() gui:Destroy() end)
-    pcall(function() miniGui:Destroy() end)
-end)
-
-print("[SH RGB] Loaded")
-
-]==]
-
-titleBtn.MouseButton1Click:Connect(function()
-    if titleLoaded then ctrlStatus.Text = "تحكم اللقب مفعل بالفعل" return end
-    ctrlStatus.Text = "جاري تشغيل تحكم اللقب..."
-    task.spawn(function()
-        local fn, err = loadstring(SH_RGB_SOURCE)
-        if not fn then ctrlStatus.Text = "فشل: " .. tostring(err):sub(1,60); return end
-        local ok, runErr = pcall(fn)
-        if ok then titleLoaded = true; ctrlStatus.Text = "تم تشغيل تحكم اللقب"
-        else ctrlStatus.Text = "خطأ: " .. tostring(runErr):sub(1,60) end
-    end)
-end)
-
-spamBtn.MouseButton1Click:Connect(function()
-    ctrlStatus.Text = "جاري تشغيل السبام..."
-    task.spawn(function()
-        local ok, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Shhd-code/SH_spam_neo/refs/heads/main/README.md"))()
-        end)
-        if ok then ctrlStatus.Text = "تم تشغيل السبام"
-        else ctrlStatus.Text = "فشل: " .. tostring(err):sub(1, 60) end
-    end)
-end)
-
-skinsBtn.MouseButton1Click:Connect(function()
-    ctrlStatus.Text = "جاري تشغيل السكنات..."
-    task.spawn(function()
-        local ok, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Shhd-code/Skinn-neooo/refs/heads/main/README.md"))()
-        end)
-        if ok then ctrlStatus.Text = "تم تشغيل السكنات"
-        else ctrlStatus.Text = "فشل: " .. tostring(err):sub(1, 60) end
-    end)
-end)
-
-extraBtn.MouseButton1Click:Connect(function()
-    ctrlStatus.Text = "جاري تشغيل السكربت الإضافي..."
-    task.spawn(function()
-        local ok, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Shhd-code/R/refs/heads/main/README.md"))()
-        end)
-        if ok then ctrlStatus.Text = "تم تشغيل السكربت الإضافي"
-        else ctrlStatus.Text = "فشل: " .. tostring(err):sub(1, 60) end
-    end)
-end)
-
-print("[SH] Loaded")
+local function GetCharacterTargetPart(char)
+    if not char then return nil end
+    local preferred = char:FindFirstChild(Settings.HitPart)
+    if preferred and preferred:IsA("BasePart") then
+        return preferred
+    end
+    local fallbacks = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso", "Torso"}
+    for _, name in ipairs(fallbacks) do
+        local part = char:FindFirstChild(name)
+        if part and part:IsA("BasePart") then
+            return part
+        end
+    end... (90 KB left)
