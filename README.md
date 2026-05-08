@@ -318,6 +318,228 @@ NewsTab:AddParagraph({
     Title = "Version Status",
     Content = "Current Version: v1.2.0\nStatus: Undetected\nPlatform: Delta Executor"
 })
+-- FUN SECTION CONTENT (الميزات الجديدة)
+
+-- 1. وضعية السكران (Drunk Mode) - تجعل الكاميرا تهتز وتتمايل
+FunTab:AddToggle("DrunkMode", {
+Title = "Drunk Mode 🥴",
+Description = "Makes your camera go crazy",
+Default = false,
+Callback = function(Value)
+_G.Drunk = Value
+task.spawn(function()
+while _G.Drunk do
+local intensity = 0.1
+local x = math.random(-100, 100)/1000 * intensity
+local y = math.random(-100, 100)/1000 * intensity
+local z = math.random(-100, 100)/1000 * intensity
+game.Workspace.CurrentCamera.CFrame = game.Workspace.CurrentCamera.CFrame * CFrame.Angles(x, y, z)
+task.wait()
+end
+end)
+end
+})
+
+-- 2. تغيير لون الجسم (Rainbow Character)
+FunTab:AddToggle("RainbowChar", {
+Title = "Rainbow Body 🌈",
+Description = "Changes your body color constantly",
+Default = false,
+Callback = function(Value)
+_G.Rainbow = Value
+task.spawn(function()
+while _G.Rainbow do
+for i = 0, 1, 0.01 do
+if not _G.Rainbow then break end
+local char = game.Players.LocalPlayer.Character
+if char then
+for _, part in pairs(char:GetChildren()) do
+if part:IsA("BasePart") then
+part.Color = Color3.fromHSV(i, 1, 1)
+end
+end
+end
+task.wait(0.05)
+end
+end
+end)
+end
+})
+
+-- 3. تأثير الديسكو (Disco World) - يغير لون السماء والإضاءة
+FunTab:AddToggle("DiscoMode", {
+Title = "Disco World 🎵",
+Description = "Flashy lights everywhere",
+Default = false,
+Callback = function(Value)
+_G.Disco = Value
+task.spawn(function()
+while _G.Disco do
+game:GetService("Lighting").Ambient = Color3.new(math.random(), math.random(), math.random())
+game:GetService("Lighting").OutdoorAmbient = Color3.new(math.random(), math.random(), math.random())
+task.wait(0.1)
+end
+game:GetService("Lighting").Ambient = Color3.fromRGB(127, 127, 127) -- إعادة للأصل
+end)
+end
+})
+
+-- 4. الدوران السريع (Spin Bot) - تجعل شخصيتك تدور حول نفسها
+FunTab:AddToggle("SpinBot", {
+Title = "Spin Bot 🌪️",
+Description = "Spin like a tornado",
+Default = false,
+Callback = function(Value)
+_G.Spin = Value
+task.spawn(function()
+while _G.Spin do
+local char = game.Players.LocalPlayer.Character
+if char and char:FindFirstChild("HumanoidRootPart") then
+char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(20), 0)
+end
+task.wait()
+end
+end)
+end
+})
+
+-- 5. إخفاء الملحقات (No Accessories) - يجعلك أصلع بدون ملابس
+FunTab:AddButton({
+Title = "Go Bald 🧑‍🦲",
+Description = "Remove all accessories from your character",
+Callback = function()
+local char = game.Players.LocalPlayer.Character
+if char then
+for _, v in pairs(char:GetChildren()) do
+if v:IsA("Accessory") then
+v:Destroy()
+end
+end
+end
+end
+})
+
+-- 6. القفز اللانهائي (Infinite Jump)
+FunTab:AddToggle("InfJump", {
+Title = "Infinite Jump 🚀",
+Description = "Jump as much as you want",
+Default = false,
+Callback = function(Value)
+_G.InfJumpEnabled = Value
+game:GetService("UserInputService").JumpRequest:Connect(function()
+if _G.InfJumpEnabled then
+game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+end
+end)
+end
+})
+
+-- STATS SECTION CONTENT (Session Tracker)
+
+-- [ متغيرات لحساب الإحصائيات منذ بداية التشغيل ]
+local StartTime = tick()
+local InitialLevel = Player:FindFirstChild("leaderstats") and Player.leaderstats:FindFirstChild("Level") and Player.leaderstats.Level.Value or 0
+local InitialMoney = Player:FindFirstChild("leaderstats") and (Player.leaderstats:FindFirstChild("Money") or Player.leaderstats:FindFirstChild("Cash")) and (Player.leaderstats:FindFirstChild("Money") or Player.leaderstats:FindFirstChild("Cash")).Value or 0
+
+-- إضافة الفقرات (Paragraphs) التي سيتم تحديثها
+local LevelLabel = StatsTab:AddParagraph({
+Title = "Level Tracker",
+Content = "Levels Gained: 0"
+})
+
+local MoneyLabel = StatsTab:AddParagraph({
+Title = "Money Earned",
+Content = "Cash Gained: 0"
+})
+
+local TimeLabel = StatsTab:AddParagraph({
+Title = "Play Time",
+Content = "Session Duration: 00:00:00"
+})
+
+-- [ حلقة التحديث التلقائي للإحصائيات ]
+task.spawn(function()
+while task.wait(1) do
+-- 1. تحديث الوقت (Play Time)
+local Seconds = math.floor(tick() - StartTime)
+local Minutes = math.floor(Seconds / 60)
+local Hours = math.floor(Minutes / 60)
+local TimeStr = string.format("%02d:%02d:%02d", Hours % 24, Minutes % 60, Seconds % 60)
+TimeLabel:SetTitle("Play Time: " .. TimeStr)
+
+-- 2. تحديث الليفل (Level Tracker)  
+    local CurrentLevel = Player:FindFirstChild("leaderstats") and Player.leaderstats:FindFirstChild("Level") and Player.leaderstats.Level.Value or 0  
+    LevelLabel:SetContent("Levels Gained: " .. (CurrentLevel - InitialLevel))  
+
+    -- 3. تحديث الفلوس (Money Earned)  
+    local CurrentMoney = Player:FindFirstChild("leaderstats") and (Player.leaderstats:FindFirstChild("Money") or Player.leaderstats:FindFirstChild("Cash")) and (Player.leaderstats:FindFirstChild("Money") or Player.leaderstats:FindFirstChild("Cash")).Value or 0  
+    MoneyLabel:SetContent("Cash Gained: " .. (CurrentMoney - InitialMoney))  
+end
+
+end)
+
+-- ENVIRONMENT SECTION CONTENT
+
+-- 1. Remove Fog (إزالة الضباب)
+EnvironmentTab:AddToggle("RemoveFog", {
+Title = "Remove Fog",
+Description = "Eliminates fog for maximum visibility",
+Default = false,
+Callback = function(Value)
+if Value then
+game:GetService("Lighting").FogEnd = 100000
+game:GetService("Lighting").FogStart = 0
+else
+-- يعيد الإعدادات الافتراضية للعبة (تقريبياً)
+game:GetService("Lighting").FogEnd = 1000
+end
+end
+})
+
+-- 2. Water Transparency (شفافية الماء)
+EnvironmentTab:AddSlider("WaterTransparency", {
+Title = "Water Transparency",
+Description = "Adjust how clear the water is",
+Default = 0.5,
+Min = 0,
+Max = 1,
+Rounding = 1,
+Callback = function(Value)
+workspace.Terrain.WaterTransparency = Value
+end
+})
+
+-- 3. Full Bright (إضاءة كاملة)
+EnvironmentTab:AddToggle("FullBright", {
+Title = "Full Bright",
+Description = "Removes shadows and makes everything bright",
+Default = false,
+Callback = function(Value)
+if Value then
+game:GetService("Lighting").Brightness = 2
+game:GetService("Lighting").GlobalShadows = false
+game:GetService("Lighting").Ambient = Color3.fromRGB(255, 255, 255)
+else
+game:GetService("Lighting").Brightness = 1
+game:GetService("Lighting").GlobalShadows = true
+game:GetService("Lighting").Ambient = Color3.fromRGB(127, 127, 127)
+end
+end
+})
+
+-- 4. Time of Day (التحكم في الوقت)
+EnvironmentTab:AddSlider("TimeSlider", {
+Title = "Time of Day",
+Description = "Change the game clock",
+Default = 12,
+Min = 0,
+Max = 24,
+Rounding = 1,
+Callback = function(Value)
+game:GetService("Lighting").ClockTime = Value
+end
+})
+
 -------------------------------------------------
 -- MANAGER
 -------------------------------------------------
