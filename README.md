@@ -626,34 +626,6 @@ InfoTab:AddParagraph({
         DisplayName, Name, UserId, AccountAge, CreationDate
     )
 })
--------------------------------------------------
--- FINAL CLEANUP (ضعه في نهاية الملف)
--------------------------------------------------
-
--- وظيفة لإزالة الضباب فور تشغيل السكربت
-local function AutoClearFog()
-    local Lighting = game:GetService("Lighting")
-    
-    -- تنظيف الضباب العادي
-    Lighting.FogEnd = 100000
-    Lighting.FogStart = 0
-    
-    -- تنظيف ضباب الألعاب الحديثة (Atmosphere)
-    local Atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
-    if Atmosphere then
-        Atmosphere.Density = 0
-    end
-end
-
--- تشغيل التنظيف
-AutoClearFog()
-
--- إشعار التشغيل النهائي
-Fluent:Notify({
-    Title = "ABC Hub Ready",
-    Content = "Fog cleared & Script loaded successfully!",
-    Duration = 5,
-})
 
 -------------------------------------------------
 -- MANAGER
