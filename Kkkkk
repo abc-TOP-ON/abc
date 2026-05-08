@@ -71,6 +71,233 @@ HomeTab:AddButton({
             Duration = 3
         })
     end
+}) 
+PlayerTab:AddInput({
+    Title = "WalkSpeed",
+    Default = "16",
+    Numeric = true,
+    Finished = true,
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = tonumber(Value)
+    end
+})
+
+PlayerTab:AddInput({
+    Title = "JumpPower",
+    Default = "50",
+    Numeric = true,
+    Finished = true,
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.JumpPower = tonumber(Value)
+    end
+})
+
+PlayerTab:AddInput({
+    Title = "Gravity",
+    Default = "196.2",
+    Numeric = true,
+    Finished = true,
+    Callback = function(Value)
+        game.Workspace.Gravity = tonumber(Value)
+    end
+})
+
+PlayerTab:AddToggle({
+    Title = "Infinite Jump",
+    Default = false,
+    Callback = function(Value)
+        _G.InfJump = Value
+    end
+})
+
+game:GetService("UserInputService").JumpRequest:Connect(function()
+    if _G.InfJump then
+        game.Players.LocalPlayer.Character.Humanoid:ChangeState("Jumping")
+    end
+end)
+
+PlayerTab:AddToggle({
+    Title = "Fly",
+    Default = false,
+    Callback = function(Value)
+        _G.Fly = Value
+    end
+})
+
+PlayerTab:AddInput({
+    Title = "Fly Speed",
+    Default = "50",
+    Numeric = true,
+    Callback = function(Value)
+        _G.FlySpeed = tonumber(Value)
+    end
+})
+
+PlayerTab:AddToggle({
+    Title = "Swim in Air",
+    Default = false,
+    Callback = function(Value)
+        local hum = game.Players.LocalPlayer.Character.Humanoid
+        if Value then
+            hum:ChangeState(Enum.HumanoidStateType.Swimming)
+        end
+    end
+})  
+MiscTab:AddButton({
+    Title = "Enable Anti-AFK",
+    Callback = function()
+        local vu = game:GetService("VirtualUser")
+        game.Players.LocalPlayer.Idled:Connect(function()
+            vu:Button2Down(Vector2.new(), workspace.CurrentCamera.CFrame)
+            wait(1)
+            vu:Button2Up(Vector2.new(), workspace.CurrentCamera.CFrame)
+        end)
+    end
+})
+
+MiscTab:AddButton({
+    Title = "Rejoin Server",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId)
+    end
+})
+
+MiscTab:AddButton({
+    Title = "Server Hop",
+    Callback = function()
+        -- يحتاج API صحيح
+    end
+})
+
+MiscTab:AddToggle({
+    Title = "Anti-Fling",
+    Default = false,
+    Callback = function(Value)
+        _G.AntiFling = Value
+    end
+})
+
+MiscTab:AddButton({
+    Title = "Set Morning",
+    Callback = function()
+        game.Lighting.ClockTime = 12
+    end
+})
+
+MiscTab:AddButton({
+    Title = "Set Night",
+    Callback = function()
+        game.Lighting.ClockTime = 0
+    end
+})
+
+MiscTab:AddButton({
+    Title = "FPS Boost",
+    Callback = function()
+        settings().Rendering.QualityLevel = "Level01"
+    end
+})
+NewsTab:AddParagraph({
+    Title = "News",
+    Content = "Updates: Player tools added, Misc tools improved, English version."
+})
+
+NewsTab:AddButton({
+    Title = "About Us",
+    Callback = function()
+        Fluent:Notify({
+            Title = "ABC Team",
+            Content = "We are the ABC Team",
+            Duration = 5
+        })
+    end
+})
+
+NewsTab:AddParagraph({
+    Title = "Version",
+    Content = "v1.2.0 | Status: Undetected"
+})
+FunTab:AddToggle({
+    Title = "Drunk Mode",
+    Callback = function(Value)
+        _G.Drunk = Value
+    end
+})
+
+FunTab:AddToggle({
+    Title = "Rainbow Body",
+    Callback = function(Value)
+        _G.Rainbow = Value
+    end
+})
+
+FunTab:AddToggle({
+    Title = "Disco World",
+    Callback = function(Value)
+        _G.Disco = Value
+    end
+})
+
+FunTab:AddToggle({
+    Title = "Spin Bot",
+    Callback = function(Value)
+        _G.Spin = Value
+    end
+})
+
+FunTab:AddButton({
+    Title = "Go Bald",
+    Callback = function()
+        local char = game.Players.LocalPlayer.Character
+        for _,v in pairs(char:GetChildren()) do
+            if v:IsA("Accessory") then v:Destroy() end
+        end
+    end
+})
+StatsTab:AddParagraph({
+    Title = "Play Time",
+    Content = "Tracking session time..."
+})
+
+StatsTab:AddParagraph({
+    Title = "Level",
+    Content = "Tracking level gain..."
+})
+
+StatsTab:AddParagraph({
+    Title = "Money",
+    Content = "Tracking cash gain..."
+})
+EnvironmentTab:AddToggle({
+    Title = "Remove Fog",
+    Callback = function(Value)
+        game.Lighting.FogEnd = Value and 100000 or 1000
+    end
+})
+
+EnvironmentTab:AddSlider({
+    Title = "Water Transparency",
+    Min = 0,
+    Max = 1,
+    Callback = function(Value)
+        workspace.Terrain.WaterTransparency = Value
+    end
+})
+
+EnvironmentTab:AddToggle({
+    Title = "Full Bright",
+    Callback = function(Value)
+        game.Lighting.Brightness = Value and 2 or 1
+    end
+})
+
+EnvironmentTab:AddSlider({
+    Title = "Time of Day",
+    Min = 0,
+    Max = 24,
+    Callback = function(Value)
+        game.Lighting.ClockTime = Value
+    end
 })
 -------------------------------------------------
 -- MANAGER
