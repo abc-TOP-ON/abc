@@ -539,6 +539,121 @@ Callback = function(Value)
 game:GetService("Lighting").ClockTime = Value
 end
 })
+-------------------------------------------------
+-- ELITE ACCESS SECTION CONTENT
+-------------------------------------------------
+
+-- 1. FPS Booster (زيادة الفريمات)
+EliteTab:AddButton({
+    Title = "Ultimate FPS Boost 🚀",
+    Description = "Removes textures & effects for maximum FPS",
+    Callback = function()
+        -- تنظيف التأثيرات لزيادة الأداء
+        local Lighting = game:GetService("Lighting")
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 9e9
+        
+        for _, v in pairs(game:GetDescendants()) do
+            if v:IsA("Part") or v:IsA("MeshPart") then
+                v.Material = Enum.Material.SmoothPlastic
+                v.Reflectance = 0
+            elseif v:IsA("Decal") or v:IsA("Texture") then
+                v.Transparency = 1
+            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+                v.Enabled = false
+            end
+        end
+        
+        Fluent:Notify({ Title = "Elite", Content = "FPS Boosted successfully!", Duration = 3 })
+    end
+})
+
+-- 2. Click Teleport (أداة انتقال احترافية)
+EliteTab:AddButton({
+    Title = "Elite TP Tool 📍",
+    Description = "Get a tool to teleport anywhere you click",
+    Callback = function()
+        local mouse = Player:GetMouse()
+        local tool = Instance.new("Tool")
+        tool.Name = "Elite TP Tool"
+        tool.RequiresHandle = false
+        
+        tool.Activated:Connect(function()
+            local pos = mouse.Hit.p + Vector3.new(0, 3, 0)
+            if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                Player.Character.HumanoidRootPart.CFrame = CFrame.new(pos)
+            end
+        end)
+        
+        tool.Parent = Player.Backpack
+        Fluent:Notify({ Title = "Success", Content = "TP Tool added to your backpack!", Duration = 3 })
+    end
+})
+
+-- 3. Anti-Kick / Anti-Bypass (مضاد الطرد)
+EliteTab:AddToggle("AntiKick", {
+    Title = "Anti-Kick Protection 🛡️",
+    Description = "Protects you from being kicked by the game",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            local mt = getrawmetatable(game)
+            local old = mt.__namecall
+            setreadonly(mt, false)
+            
+            mt.__namecall = newcclosure(function(self, ...)
+                local method = getnamecallmethod()
+                if method == "Kick" or method == "kick" then
+                    Fluent:Notify({ Title = "Protection", Content = "The game tried to kick you, but I stopped it!", Duration = 5 })
+                    return nil
+                end
+                return old(self, ...)
+            end)
+            
+            setreadonly(mt, true)
+            Fluent:Notify({ Title = "Elite", Content = "Anti-Kick Protection Enabled!", Duration = 3 })
+        end
+    end
+})
+-------------------------------------------------
+-- INFORMATION TAB CONTENT
+-------------------------------------------------
+
+InfoTab:AddParagraph({
+    Title = "👤 Player Information",
+    Content = string.format(
+        "• Display Name: %s\n• Username: %s\n• Account ID: %d\n• Account Age: %d Days\n• Creation Date: %s",
+        DisplayName, Name, UserId, AccountAge, CreationDate
+    )
+})
+-------------------------------------------------
+-- FINAL CLEANUP (ضعه في نهاية الملف)
+-------------------------------------------------
+
+-- وظيفة لإزالة الضباب فور تشغيل السكربت
+local function AutoClearFog()
+    local Lighting = game:GetService("Lighting")
+    
+    -- تنظيف الضباب العادي
+    Lighting.FogEnd = 100000
+    Lighting.FogStart = 0
+    
+    -- تنظيف ضباب الألعاب الحديثة (Atmosphere)
+    local Atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+    if Atmosphere then
+        Atmosphere.Density = 0
+    end
+end
+
+-- تشغيل التنظيف
+AutoClearFog()
+
+-- إشعار التشغيل النهائي
+Fluent:Notify({
+    Title = "ABC Hub Ready",
+    Content = "Fog cleared & Script loaded successfully!",
+    Duration = 5,
+})
 
 -------------------------------------------------
 -- MANAGER
