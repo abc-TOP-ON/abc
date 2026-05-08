@@ -1,0 +1,161 @@
+-- LOAD FLUENT MODDED LIBRARY
+local Fluent = loadstring(game:HttpGet("https://github.com/StyearX/Fluent-Modded/releases/download/N/Fluent.lua"))()
+
+local SaveManager = Fluent.SaveManager
+local InterfaceManager = Fluent.InterfaceManager
+
+-- [ هنا نجلب معلومات اللاعب أولاً ]
+local Player = game.Players.LocalPlayer
+local DisplayName = Player.DisplayName
+local Name = Player.Name
+local UserId = Player.UserId
+local AccountAge = Player.AccountAge
+local CreationDate = os.date("%Y-%m-%d", os.time() - (AccountAge * 86400))
+
+-- WINDOW
+local Window = Fluent:CreateWindow({
+    Title = "ABC TOP ON",
+    SubTitle = "dev : hamza000599",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(480, 460),
+    Acrylic = true,
+    Theme = "Blood Red",
+    MinimizeKey = Enum.KeyCode.LeftControl,
+    Search = true,
+})
+
+-------------------------------------------------
+-- TABS (إضافة التبويب هنا)
+-------------------------------------------------
+
+local HomeTab = Window:AddTab({ Title = "Home", Icon = "home" })
+local MinaTab = Window:AddTab({ Title = "Welcome", Icon = "info" }) 
+local PlayerTab = Window:AddTab({ Title = "Player", Icon = "user" })
+local ScriptTab = Window:AddTab({ Title = "Script", Icon = "code" })
+local MiscTab = Window:AddTab({ Title = "Misc", Icon = "box" })
+local NewsTab = Window:AddTab({ Title = "News", Icon = "newspaper" })
+local SettingsTab = Window:AddTab({ Title = "Settings", Icon = "settings" })
+local FunTab = Window:AddTab({ Title = "Fun", Icon = "gamepad" })                                           local StatsTab = Window:AddTab({ Title = "Stats", Icon = "bar-chart" })                local EnvironmentTab = Window:AddTab({ Title = "Environment", Icon = "globe" })                                                                                                                                              local EliteTab = Window:AddTab({ Title = "✨ Elite Access", Icon = "star" })local InfoTab = Window:AddTab({ Title = "ℹ️ Information", Icon = "info" })
+-------------------------------------------------
+-- MINA SECTION CONTENT (محتوى قسم مينا)
+-------------------------------------------------
+MinaTab:AddParagraph({
+    Title = "Welcome",
+    Content = "Welcome to the server! We hope you enjoy your time here.\n\n✨ You have lightened the server ✨"
+})                                                                                                                                                               
+ -- DEV INFO (Clickable Copy)
+
+HomeTab:AddButton({
+    Title = "Developer: hamza000599",
+    Description = "Click to copy developer name",
+    Callback = function()
+        setclipboard("hamza000599")
+
+        Fluent:Notify({
+            Title = "Copied",
+            Content = "Developer name copied!",
+            Duration = 3
+        })
+    end
+})
+
+HomeTab:AddButton({
+    Title = "Discord: hamza.abc0",
+    Description = "Click to copy Discord username",
+    Callback = function()
+        setclipboard("hamza.abc0")
+
+        Fluent:Notify({
+            Title = "Copied",
+            Content = "Discord username copied!",
+            Duration = 3
+        })
+    end
+})
+-------------------------------------------------
+-- MANAGER
+-------------------------------------------------
+
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+
+InterfaceManager:SetFolder("MyHub")
+InterfaceManager:BuildInterfaceSection(SettingsTab)
+
+-------------------------------------------------
+-- FLOATING BUTTON
+-------------------------------------------------
+
+local OpenGui = Instance.new("ScreenGui")
+OpenGui.Name = "OpenUI"
+OpenGui.ResetOnSpawn = false
+OpenGui.Parent = game:GetService("CoreGui")
+
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Size = UDim2.fromOffset(60, 60)
+OpenBtn.Position = UDim2.new(0.02, 0, 0.5, 0)
+OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+OpenBtn.Text = "ABC"
+OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenBtn.TextScaled = true
+OpenBtn.Font = Enum.Font.SourceSansBold
+OpenBtn.Parent = OpenGui
+
+Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(0.25, 0)
+
+OpenBtn.MouseButton1Click:Connect(function()
+    if Window and Window.Minimize then
+        Window:Minimize()
+    end
+end)
+
+-------------------------------------------------
+-- DRAG SYSTEM
+-------------------------------------------------
+
+local dragging = false
+local dragInput, dragStart, startPos
+
+OpenBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = OpenBtn.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+OpenBtn.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        OpenBtn.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-------------------------------------------------
+-- NOTIFY
+-------------------------------------------------
+
+Fluent:Notify({
+    Title = "ABC Hub",
+    Content = "Welcome " .. DisplayName .. "!",
+    Duration = 4,
+})
+
+Window:SelectTab(MinaTab) -- جعل السكربت يفتح على قسم مينا مباشرة
