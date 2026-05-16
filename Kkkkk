@@ -1,162 +1,363 @@
--- LOAD FLUENT MODDED LIBRARY
-local Fluent = loadstring(game:HttpGet("https://github.com/StyearX/Fluent-Modded/releases/download/N/Fluent.lua"))()
+-- Modern HD Admin Tool Box - abc WindUI Dual Sidebar Edition
+-- Integrating your requested GitHub link for WindUI directly at the top
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
-local SaveManager = Fluent.SaveManager
-local InterfaceManager = Fluent.InterfaceManager
-
--- [ هنا نجلب معلومات اللاعب أولاً ]
-local Player = game.Players.LocalPlayer
-local DisplayName = Player.DisplayName
-local Name = Player.Name
-local UserId = Player.UserId
-local AccountAge = Player.AccountAge
-local CreationDate = os.date("%Y-%m-%d", os.time() - (AccountAge * 86400))
-
--- WINDOW
-local Window = Fluent:CreateWindow({
-    Title = "ABC TOP ON",
-    SubTitle = "dev : hamza000599",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(480, 460),
-    Acrylic = true,
-    Theme = "Blood Red",
-    MinimizeKey = Enum.KeyCode.LeftControl,
-    Search = true,
+-- 1. INITIALIZE MASTER WINDOW
+local Window = WindUI:CreateWindow({
+    Title = "abc - HD ADMIN MASTER",
+    Icon = "rbxassetid://10734996167", -- Sleek Neon Icon
+    Author = "abc Developer",
+    Folder = "abc_WindUI_Storage",
+    Size = UDim2.fromOffset(500, 440),
+    Transparent = true,
+    Blur = true,
+    Theme = "Dark"
 })
 
--------------------------------------------------
--- TABS (إضافة التبويب هنا)
--------------------------------------------------
+-- 2. CREATE FUNCTIONAL NAVIGATION TABS
+local SpamTab = Window:Tab({
+    Title = "Spam",
+    Icon = "rbxassetid://10723351907"
+})
 
-local HomeTab = Window:AddTab({ Title = "Home", Icon = "home" })
-local MinaTab = Window:AddTab({ Title = "Welcome", Icon = "info" }) 
-local PlayerTab = Window:AddTab({ Title = "Player", Icon = "user" })
-local ScriptTab = Window:AddTab({ Title = "Script", Icon = "code" })
-local MiscTab = Window:AddTab({ Title = "Misc", Icon = "box" })
-local NewsTab = Window:AddTab({ Title = "News", Icon = "newspaper" })
-local SettingsTab = Window:AddTab({ Title = "Settings", Icon = "settings" })
-local FunTab = Window:AddTab({ Title = "Fun", Icon = "gamepad" })                                           local StatsTab = Window:AddTab({ Title = "Stats", Icon = "bar-chart" })                local EnvironmentTab = Window:AddTab({ Title = "Environment", Icon = "globe" })                                                                                                                                              local EliteTab = Window:AddTab({ Title = "✨ Elite Access", Icon = "star" })local InfoTab = Window:AddTab({ Title = "ℹ️ Information", Icon = "info" })
--------------------------------------------------
--- MINA SECTION CONTENT (محتوى قسم مينا)
--------------------------------------------------
-MinaTab:AddParagraph({
-    Title = "Welcome",
-    Content = "Welcome to the server! We hope you enjoy your time here.\n\n✨ You have lightened the server ✨"
-})                                                                                                                                                               
- -- DEV INFO (Clickable Copy)
+local MinaTab = Window:Tab({
+    Title = "Mina",
+    Icon = "rbxassetid://10723346953"
+})
 
-HomeTab:AddButton({
-    Title = "Developer: hamza000599",
-    Description = "Click to copy developer name",
+-- Create Sections for structural layouts
+local SpamSection = SpamTab:Section({
+    Title = "Control Hub",
+    Opened = true
+})
+
+local MinaSection = MinaTab:Section({
+    Title = "Developer Information",
+    Opened = true
+})
+
+-- Core Runtime State Tracking
+local spamActive = false
+local currentCommands = ";fly;jump;speed 50"
+
+-----------------------------------------------------------------------
+-- SYSTEM REMOTE CALLS (HD Admin Framework Hooks)
+-----------------------------------------------------------------------
+local function executeRemotePayload(cmd)
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local player = game:GetService("Players").LocalPlayer
+    
+    pcall(function()
+        local hdAdmin = ReplicatedStorage:FindFirstChild("HDAdminHDClient")
+        if hdAdmin then
+            local signals = hdAdmin:FindFirstChild("Signals")
+            if signals then
+                local createLog = signals:FindFirstChild("CreateLog")
+                if createLog then
+                    createLog:FireServer({Message = cmd, Player = player, LogType = "chatLogs"})
+                end
+            end
+        end
+    end)
+    
+    pcall(function()
+        local hdAdmin = ReplicatedStorage:FindFirstChild("HDAdminHDClient")
+        if hdAdmin then
+            local signals = hdAdmin:FindFirstChild("Signals")
+            if signals then
+                local reqMod = signals:FindFirstChild("RequestCommandModification")
+                if reqMod then
+                    reqMod:InvokeServer(cmd)
+                end
+            end
+        end
+    end)
+end
+
+-----------------------------------------------------------------------
+-- SPAM PANEL CONTENT
+-----------------------------------------------------------------------
+
+-- Multi-line input space for copy-pasting code arrays
+SpamSection:Input({
+    Title = "Instruction Input Core",
+    Desc = "Paste target procedures here bounded by semicolons (;)",
+    Placeholder = "e.g. ;fly;jump;speed 100",
+    Value = currentCommands,
+    Callback = function(text)
+        currentCommands = text
+    end
+})
+
+-- Execution Trigger
+SpamSection:Button({
+    Title = "RUN SYSTEM",
+    Desc = "Initiate thread loops injecting inputs into server remotes",
     Callback = function()
-        setclipboard("hamza000599")
+        if spamActive then return end
+        
+        local parsedCmds = {}
+        for c in string.gmatch(currentCommands, ";[^;\n]+") do 
+            table.insert(parsedCmds, c) 
+        end
+        
+        if #parsedCmds == 0 then 
+            WindUI:Notify({
+                Title = "SYSTEM FAULT",
+                Content = "No executable routines identified inside input window framework!",
+                Type = "Error",
+                Duration = 4
+            })
+            return 
+        end
+        
+        spamActive = true
+        
+        WindUI:Notify({
+            Title = "SYSTEM OPERATIONAL",
+            Content = "Successfully processing " .. #parsedCmds .. " background tasks inside loops.",
+            Type = "Success",
+            Duration = 4
+        })
+        
+        task.spawn(function()
+            while spamActive do
+                for i = 1, 3 do 
+                    for _, c in pairs(parsedCmds) do 
+                        if not spamActive then break end 
+                        task.spawn(function() executeRemotePayload(c) end) 
+                    end 
+                end
+                task.wait(1)
+            end
+        end)
+    end
+})
 
-        Fluent:Notify({
-            Title = "Copied",
-            Content = "Developer name copied!",
+-- Interruption Process Switch
+SpamSection:Button({
+    Title = "STOP EXECUTIVE",
+    Desc = "Safely interrupt running background loops instantly",
+    Callback = function()
+        if not spamActive then return end
+        spamActive = false 
+        
+        WindUI:Notify({
+            Title = "OPERATION HALTED",
+            Content = "Background loop threads successfully dropped from core pipeline.",
+            Type = "Warning",
+            Duration = 4
+        })
+    end
+})
+
+-- Diagnostic Toast Alerts Placed Under Buttons
+SpamSection:Button({
+    Title = "Trigger Success Toast",
+    Desc = "Verify responsive status using green operational layouts",
+    Callback = function()
+        WindUI:Notify({
+            Title = "abc Diagnostics Passed",
+            Content = "Operational pipelines running smoothly within safe memory margins.",
+            Type = "Success",
             Duration = 3
         })
     end
 })
 
-HomeTab:AddButton({
-    Title = "Discord: hamza.abc0",
-    Description = "Click to copy Discord username",
+SpamSection:Button({
+    Title = "Trigger Warning Toast",
+    Desc = "Verify warning layout components inside the window instance",
     Callback = function()
-        setclipboard("hamza.abc0")
-
-        Fluent:Notify({
-            Title = "Copied",
-            Content = "Discord username copied!",
+        WindUI:Notify({
+            Title = "Resource Notice",
+            Content = "Network latency detected. Monitoring connection pathways.",
+            Type = "Warning",
             Duration = 3
         })
     end
 })
 
--------------------------------------------
--- MANAGER
--------------------------------------------------
-
-SaveManager:SetLibrary(Fluent)
-InterfaceManager:SetLibrary(Fluent)
-
-InterfaceManager:SetFolder("MyHub")
-InterfaceManager:BuildInterfaceSection(SettingsTab)
-
--------------------------------------------------
--- FLOATING BUTTON
--------------------------------------------------
-
-local OpenGui = Instance.new("ScreenGui")
-OpenGui.Name = "OpenUI"
-OpenGui.ResetOnSpawn = false
-OpenGui.Parent = game:GetService("CoreGui")
-
-local OpenBtn = Instance.new("TextButton")
-OpenBtn.Size = UDim2.fromOffset(60, 60)
-OpenBtn.Position = UDim2.new(0.02, 0, 0.5, 0)
-OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-OpenBtn.Text = "ABC"
-OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-OpenBtn.TextScaled = true
-OpenBtn.Font = Enum.Font.SourceSansBold
-OpenBtn.Parent = OpenGui
-
-Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(0.25, 0)
-
-OpenBtn.MouseButton1Click:Connect(function()
-    if Window and Window.Minimize then
-        Window:Minimize()
+SpamSection:Button({
+    Title = "Trigger Error Toast",
+    Desc = "Test emergency failure system handling wrappers cleanly",
+    Callback = function()
+        WindUI:Notify({
+            Title = "Critical Failure Simulator",
+            Content = "Security engine bypassed successfully.",
+            Type = "Error",
+            Duration = 3
+        })
     end
+})
+
+-----------------------------------------------------------------------
+-- MINA PANEL CONTENT (Developer Tab)
+-----------------------------------------------------------------------
+
+MinaSection:Button({
+    Title = "Script Developer: hamza000599",
+    Desc = "Click to copy the developer name to your clipboard",
+    Callback = function()
+        -- Handle Clipboard copy tracking via standard executor functions
+        if setclipboard then
+            setclipboard("hamza000599")
+        elseif toclipboard then
+            toclipboard("hamza000599")
+        end
+        
+        WindUI:Notify({
+            Title = "Clipboard Status",
+            Content = "Developer name copied successfully!",
+            Type = "Success",
+            Duration = 3
+        })
+    end
+})
+
+MinaSection:Button({
+    Title = "Discord Server: hamza.abc0",
+    Desc = "Click to copy the Discord invitation code handle link",
+    Callback = function()
+        if setclipboard then
+            setclipboard("hamza.abc0")
+        elseif toclipboard then
+            toclipboard("hamza.abc0")
+        end
+        
+        WindUI:Notify({
+            Title = "Clipboard Status",
+            Content = "Discord server link copied successfully!",
+            Type = "Success",
+            Duration = 3
+        })
+    end
+})
+
+-- FIXED: Focus on the Mina Tab by default on launch
+Window:SelectTab(MinaTab)
+
+-----------------------------------------------------------------------
+-- DUAL SIDEBAR FLOATING TOGGLE INTERFACE (Anti-Crash Layout)
+-----------------------------------------------------------------------
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local SideToggleGui = Instance.new("ScreenGui")
+SideToggleGui.Name = "abcDualToggle"
+SideToggleGui.ResetOnSpawn = false
+
+pcall(function() SideToggleGui.Parent = game:GetService("CoreGui") end)
+if not SideToggleGui.Parent then
+    SideToggleGui.Parent = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui")
+end
+
+-- Alignment Wrapper Frame to bundle buttons vertically
+local ButtonHolder = Instance.new("Frame")
+ButtonHolder.Name = "ButtonHolder"
+ButtonHolder.Size = UDim2.new(0, 85, 0, 80)
+ButtonHolder.Position = UDim2.new(0, 10, 0.4, 0) -- Centered perfectly along left border
+ButtonHolder.BackgroundTransparency = 1
+ButtonHolder.Parent = SideToggleGui
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Padding = UDim.new(0, 8) -- Clean padding gaps between elements
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Parent = ButtonHolder
+
+-- 1. MINA BUTTON (Placed On Top)
+local MinaButton = Instance.new("TextButton")
+MinaButton.Name = "MinaButton"
+MinaButton.Size = UDim2.new(1, 0, 0, 35)
+MinaButton.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MinaButton.Text = "Mina"
+MinaButton.TextColor3 = Color3.fromRGB(0, 150, 255)
+MinaButton.TextSize = 14
+MinaButton.Font = Enum.Font.GothamBold
+MinaButton.LayoutOrder = 1
+MinaButton.Parent = ButtonHolder
+
+local MinaCorner = Instance.new("UICorner")
+MinaCorner.CornerRadius = UDim.new(0, 8)
+MinaCorner.Parent = MinaButton
+
+local MinaStroke = Instance.new("UIStroke")
+MinaStroke.Thickness = 1.5
+MinaStroke.Color = Color3.fromRGB(0, 150, 255)
+MinaStroke.Parent = MinaButton
+
+-- 2. SPAM BUTTON (Placed Directly Underneath)
+local SpamButton = Instance.new("TextButton")
+SpamButton.Name = "SpamButton"
+SpamButton.Size = UDim2.new(1, 0, 0, 35)
+SpamButton.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+SpamButton.Text = "Spam"
+SpamButton.TextColor3 = Color3.fromRGB(0, 150, 255)
+SpamButton.TextSize = 14
+SpamButton.Font = Enum.Font.GothamBold
+SpamButton.LayoutOrder = 2
+SpamButton.Parent = ButtonHolder
+
+local SpamCorner = Instance.new("UICorner")
+SpamCorner.CornerRadius = UDim.new(0, 8)
+SpamCorner.Parent = SpamButton
+
+local SpamStroke = Instance.new("UIStroke")
+SpamStroke.Thickness = 1.5
+SpamStroke.Color = Color3.fromRGB(0, 150, 255)
+SpamStroke.Parent = SpamButton
+
+-- INTERACTIVE VISIBILITY CONTROLS
+local uiVisible = true
+
+MinaButton.MouseButton1Click:Connect(function()
+    uiVisible = true
+    pcall(function()
+        if Window.Frame then Window.Frame.Visible = true end
+    end)
+    Window:SelectTab(MinaTab)
 end)
 
--------------------------------------------------
--- DRAG SYSTEM
--------------------------------------------------
+SpamButton.MouseButton1Click:Connect(function()
+    uiVisible = true
+    pcall(function()
+        if Window.Frame then Window.Frame.Visible = true end
+    end)
+    Window:SelectTab(SpamTab)
+end)
 
-local dragging = false
-local dragInput, dragStart, startPos
-
-OpenBtn.InputBegan:Connect(function(input)
+-- Enable Dragging for the entire Button Container Holder seamlessly
+local dragging, dragInput, dragStart, startPos
+ButtonHolder.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
-        startPos = OpenBtn.Position
-
+        startPos = ButtonHolder.Position
         input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
         end)
     end
 end)
 
-OpenBtn.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
-        OpenBtn.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
+        ButtonHolder.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
 
--------------------------------------------------
--- NOTIFY
--------------------------------------------------
-
-Fluent:Notify({
-    Title = "ABC Hub",
-    Content = "Welcome " .. DisplayName .. "!",
-    Duration = 4,
-})
-
-Window:SelectTab(MinaTab) -- جعل السكربت يفتح على قسم مينا مباشرة
+-- Dynamic Synchronized Neon Colors Engine Routine
+task.spawn(function()
+    while true do
+        local info = TweenInfo.new(2.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+        local c1, c2 = Color3.fromRGB(0, 130, 255), Color3.fromRGB(160, 0, 240)
+        
+        TweenService:Create(MinaStroke, info, {Color = c1}):Play()
+        TweenService:Create(SpamStroke, info, {Color = c1}):Play()
+        task.wait(2.5)
+        
+        TweenService:Create(MinaStroke, info, {Color = c2}):Play()
+        TweenService:Create(SpamStroke, info, {Color = c2}):Play()
+        task.wait(2.5)
+    end
+end)
