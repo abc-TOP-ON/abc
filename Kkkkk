@@ -6,23 +6,22 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 local Window = WindUI:CreateWindow({
     Title = "abc - HD ADMIN MASTER",
     Icon = "rbxassetid://10734996167", -- Sleek Neon Icon
-    Author = "abc Developer",
-    Folder = "abc_WindUI_Storage",
+    Author = "hamza000599 Developer",
+    Folder = "abc top on",
     Size = UDim2.fromOffset(500, 440),
     Transparent = true,
     Blur = true,
-    Theme = "Dark"
-})
-
--- 2. CREATE FUNCTIONAL NAVIGATION TABS
-local SpamTab = Window:Tab({
-    Title = "Spam",
-    Icon = "rbxassetid://10723351907"
+    Theme = "abc"
 })
 
 local MinaTab = Window:Tab({
     Title = "Mina",
     Icon = "rbxassetid://10723346953"
+})
+-- 2. CREATE FUNCTIONAL NAVIGATION TABS
+local SpamTab = Window:Tab({
+    Title = "Spam",
+    Icon = "rbxassetid://10723351907"
 })
 
 -- Create Sections for structural layouts
