@@ -1,0 +1,188 @@
+-- Run a Restaurant! Absolute Auto-Remote Farm (Delta Fixed & Tested 2026)
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+pcall(function()
+    if game:GetService("CoreGui"):FindFirstChild("DeltaRestaurantHub") then
+        game:GetService("CoreGui").DeltaRestaurantHub:Destroy()
+    end
+end)
+
+-- حماية ضد الخمول الثابتة Anti-AFK
+pcall(function()
+    local virtualUser = game:GetService("VirtualUser")
+    game.Players.LocalPlayer.Idled:Connect(function()
+        virtualUser:CaptureController()
+        virtualUser:ClickButton2(Vector2.new(0,0))
+    end)
+end)
+
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local ToggleFastFarm = Instance.new("TextButton")
+local ToggleAntiAFK = Instance.new("TextButton")
+local ToggleLag = Instance.new("TextButton")
+local UICorner = Instance.new("UICorner")
+
+ScreenGui.Name = "DeltaRestaurantHub"
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.ResetOnSpawn = false
+
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MainFrame.Position = UDim2.new(0.35, 0, 0.25, 0)
+MainFrame.Size = UDim2.new(0, 260, 0, 290)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+UICorner.CornerRadius = UDim.new(0, 15)
+UICorner.Parent = MainFrame
+
+Title.Name = "Title"
+Title.Parent = MainFrame
+Title.BackgroundColor3 = Color3.fromRGB(45, 20, 75)
+Title.Size = UDim2.new(1, 0, 0, 50)
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "Silent Hub - Run a Restaurant"
+Title.TextColor3 = Color3.fromRGB(255, 200, 0)
+Title.TextSize = 16
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 15)
+TitleCorner.Parent = Title
+
+local FastFarmEnabled, AntiAFKEnabled, LagReducerEnabled = false, false, false
+
+-- إخفاء وإظهار القائمة بزر RightControl
+game:GetService("UserInputService").InputBegan:Connect(function(input, gpe)
+    if not gpe and input.KeyCode == Enum.KeyCode.RightControl then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+
+local function CreateButton(btn, text, pos)
+    btn.Parent = MainFrame
+    btn.BackgroundColor3 = Color3.fromRGB(150, 35, 35)
+    btn.Position = pos
+    btn.Size = UDim2.new(0, 220, 0, 45)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 14
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 10)
+    BtnCorner.Parent = btn
+end
+
+CreateButton(ToggleFastFarm, "تشغيل المزرعة الخارقة الآمنة ⚡", UDim2.new(0, 20, 0, 70))
+CreateButton(ToggleAntiAFK, "مضاد الخمول (Anti-AFK) 🛡️", UDim2.new(0, 20, 0, 140))
+CreateButton(ToggleLag, "تخفيف اللاق ورفع الـ FPS 🚀", UDim2.new(0, 20, 0, 210))
+
+ToggleFastFarm.MouseButton1Click:Connect(function() 
+    FastFarmEnabled = not FastFarmEnabled 
+    ToggleFastFarm.BackgroundColor3 = FastFarmEnabled and Color3.fromRGB(35, 150, 35) or Color3.fromRGB(150, 35, 35) 
+end)
+
+ToggleAntiAFK.MouseButton1Click:Connect(function() 
+    AntiAFKEnabled = not AntiAFKEnabled 
+    ToggleAntiAFK.BackgroundColor3 = AntiAFKEnabled and Color3.fromRGB(35, 150, 35) or Color3.fromRGB(150, 35, 35) 
+end)
+
+ToggleLag.MouseButton1Click:Connect(function()
+    LagReducerEnabled = not LagReducerEnabled
+    ToggleLag.BackgroundColor3 = LagReducerEnabled and Color3.fromRGB(35, 150, 35) or Color3.fromRGB(150, 35, 35)
+    if LagReducerEnabled then
+        pcall(function()
+            game:GetService("Lighting").GlobalShadows = false
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v:IsA("ParticleEmitter") or v:IsA("Trail") then
+                    v.Enabled = false
+                end
+            end
+        end)
+    end
+end)
+
+-- حلقة المزرعة المطلقة مع نظام التجميع المتعدد للصحون
+task.spawn(function()
+    while true do
+        task.wait(0.08) 
+        if FastFarmEnabled then
+            pcall(function()
+                
+                -- إخفاء نص التحذير المزعج تلقائياً
+                local playerGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
+                if playerGui then
+                    for _, element in pairs(playerGui:GetDescendants()) do
+                        if element:IsA("TextLabel") and (element.Text:match("Sinks") or element.Text:match("full")) then
+                            element.Visible = false
+                        end
+                    end
+                end
+
+                -- [نظام الطحن الإجباري للصحون المتسخة والمغاسل]
+                -- السكربت سيبحث أولاً إذا كان هناك صحون متسخة أو مغاسل تحتاج لتفريغ ويقوم بإنهاءها بالكامل دفعة واحدة
+                local foundDirtyWork = true
+                while foundDirtyWork and FastFarmEnabled do
+                    foundDirtyWork = false
+                    for _, obj in pairs(workspace:GetDescendants()) do
+                        if obj:IsA("ProximityPrompt") and obj.Enabled then
+                            local action = obj.ActionText:lower()
+                            local name = obj.Parent.Name:lower()
+                            
+                            -- أولوية 1: تفريغ وغسيل الصحون في المغسلة فوراً وبشكل متتابع
+                            if action:match("wash") or action:match("sink") or action:match("clean") or name:match("sink") or name:match("dishwasher") then
+                                fireproximityprompt(obj)
+                                task.wait(0.02)
+                                fireproximityprompt(obj)
+                                task.wait(0.03)
+                                foundDirtyWork = true
+                                break -- العودة لفحص الماب وتكرار العملية حتى ينتهي الغسيل بالكامل
+                            
+                            -- أولوية 2: استمرار التقاط الصحون المتسخة من الطاولات دون توقف لصحن واحد
+                            elseif action:match("clear") or name:match("dirty") or (action:match("pick") and name:match("dish")) then
+                                fireproximityprompt(obj)
+                                task.wait(0.04)
+                                foundDirtyWork = true
+                                break 
+                            end
+                        end
+                    end
+                    task.wait(0.01) -- مهلة متناهية الصغر لمنع تعليق اللعبة أثناء حلقة التنظيف المتواصلة
+                end
+
+                -- بقية العمليات الروتينية (تعمل فقط عندما يكون المطعم نظيفاً تماماً من الصحون المتسخة والمغاسل مفرغة)
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if not FastFarmEnabled then break end
+                    
+                    if obj:IsA("ProximityPrompt") and obj.Enabled then
+                        local action = obj.ActionText:lower()
+                        local name = obj.Parent.Name:lower()
+                        
+                        -- 1. جمع الكاش تلقائياً فوراً
+                        if action:match("claim") or action:match("collect") or name:match("cash") or name:match("money") or name:match("coin") then
+                            fireproximityprompt(obj)
+                            task.wait(0.02)
+                        
+                        -- 2. التقاط الأكل الجاهز من الفرن أو الكاونتر
+                        elseif action:match("take") or action:match("pick") or action:match("get") or (action:match("collect") and (name:match("stove") or name:match("counter"))) then
+                            fireproximityprompt(obj)
+                            task.wait(0.04)
+                            
+                        -- 3. تقديم الطعام للزبائن 
+                        elseif action:match("serve") or action:match("deliver") or action:match("give") or name:match("customer") or name:match("seat") then
+                            fireproximityprompt(obj)
+                            task.wait(0.04)
+                            
+                        -- 4. الطبخ واستقبال الزبائن الجدد
+                        elseif action:match("cook") or action:match("order") or name:match("stove") or action:match("seat") or action:match("welcome") then
+                            fireproximityprompt(obj)
+                            task.wait(0.02)
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
