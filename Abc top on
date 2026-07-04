@@ -890,6 +890,90 @@ task.spawn(function()
         end
     end
 end)
+-- ==========================================
+--  ENVIRONMENT TAB CONTENT (All Default Disabled)
+-- ==========================================
+
+-- Variables to store original environment states
+local originalFogStart = game:GetService("Lighting").FogStart
+local originalFogEnd = game:GetService("Lighting").FogEnd
+local originalAtmosphere = game:GetService("Lighting"):FindFirstChildOfClass("Atmosphere")
+local atmosphereDensity = originalAtmosphere and originalAtmosphere.Density or 0
+
+-- 1. Remove Fog Toggle (ميزه إزالة الضباب)
+local removeFogEnabled = false
+EnvironmentTab:Toggle({
+    Title = "Remove Fog",
+    Desc = "Clears all map fog and atmosphere for crystal clear vision",
+    Value = false,
+    Callback = function(state)
+        removeFogEnabled = state
+        if removeFogEnabled then
+            -- إخفاء الضباب عن طريق دفع مسافة الرؤية للمالانهاية
+            game:GetService("Lighting").FogStart = 999999
+            game:GetService("Lighting").FogEnd = 999999
+            
+            -- تقليل كثافة الغلاف الجوي (Atmosphere) إذا كان موجوداً بالماب
+            local atmosphere = game:GetService("Lighting"):FindFirstChildOfClass("Atmosphere")
+            if atmosphere then
+                atmosphere.Density = 0
+            end
+        else
+            -- إعادة الضباب والغلاف الجوي إلى قيم الماب الأصلية عند الإطفاء
+            game:GetService("Lighting").FogStart = originalFogStart
+            game:GetService("Lighting").FogEnd = originalFogEnd
+            
+            local atmosphere = game:GetService("Lighting"):FindFirstChildOfClass("Atmosphere")
+            if atmosphere and originalAtmosphere then
+                atmosphere.Density = atmosphereDensity
+            end
+        end
+    end
+})
+
+-- 2. Hide Water Toggle (ميزه إخفاء المياه)
+local hideWaterEnabled = false
+local waterStorage = {} -- مصفوفة لحفظ مجسمات المياه المؤثرة بالماب
+
+EnvironmentTab:Toggle({
+    Title = "Hide Water",
+    Desc = "Makes all terrain and part-based water invisible",
+    Value = false,
+    Callback = function(state)
+        hideWaterEnabled = state
+        
+        -- أولاً: التعديل على مياه التضاريس الأساسية (Terrain Water)
+        if workspace:FindFirstChildOfClass("Terrain") then
+            if hideWaterEnabled then
+                -- جعل مياه التضاريس شفافة بالكامل
+                workspace:FindFirstChildOfClass("Terrain").WaterTransparency = 1
+            else
+                -- إعادة شفافية المياه للوضع الطبيعي (0.5)
+                workspace:FindFirstChildOfClass("Terrain").WaterTransparency = 0.5
+            end
+        end
+        
+        -- ثانياً: البحث عن مجسمات المياه المصنوعة يدوياً بالماب وإخفائها
+        if hideWaterEnabled then
+            for _, object in ipairs(workspace:GetDescendants()) do
+                if object:IsA("BasePart") and (string.find(string.lower(object.Name), "water") or string.find(string.lower(object.Name), "sea") or string.find(string.lower(object.Name), "ocean")) then
+                    if object.Transparency < 1 then
+                        waterStorage[object] = object.Transparency -- حفظ الشفافية الأصلية
+                        object.Transparency = 1 -- إخفاء المجسم
+                    end
+                end
+            end
+        else
+            -- إعادة إظهار المجسمات المخفية بقيمها الأصلية عند الإطفاء
+            for object, originalTransparency in pairs(waterStorage) do
+                if object and object.Parent then
+                    object.Transparency = originalTransparency
+                end
+            end
+            waterStorage = {} -- تنظيف المصفوفة
+        end
+    end
+})
 
 -- Automatically open the Home Tab on execute
 Window:SelectTab(HomeTab)
