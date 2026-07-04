@@ -118,29 +118,68 @@ MinaTab:Button({
 --  PLAYER TAB CONTENT (All Default Disabled)
 -- ==========================================
 
--- 1. WalkSpeed Slider (Starts at game default: 16)
+-- Variables to track Toggle States
+local walkSpeedEnabled = false
+local walkSpeedValue = 16
+
+local jumpPowerEnabled = false
+local jumpPowerValue = 50
+
+local gravityEnabled = false
+local gravityValue = 196.2
+
+local spinEnabled = false
+local spinValue = 0
+local spinVelocity = nil
+
+--------------------------------------------
+-- 1 & 2. WalkSpeed (Slider + Toggle)
+--------------------------------------------
 PlayerTab:Slider({
-    Title = "WalkSpeed",
-    Desc = "Increase your character movement speed",
+    Title = "WalkSpeed Value",
+    Desc = "Set the speed value (Only applies when toggled ON)",
     Min = 16,
     Max = 500,
     Default = 16,
     Callback = function(value)
-        if Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+        walkSpeedValue = value
+        -- تحديث السرعة فوراً إذا كان المفتاح مشغلاً
+        if walkSpeedEnabled and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
             Player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = value
         end
     end
 })
 
--- 2. JumpPower Slider (Starts at game default: 50)
+PlayerTab:Toggle({
+    Title = "Enable WalkSpeed",
+    Desc = "Turn on/off custom movement speed",
+    Value = false,
+    Callback = function(state)
+        walkSpeedEnabled = state
+        if Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+            local humanoid = Player.Character:FindFirstChildOfClass("Humanoid")
+            if walkSpeedEnabled then
+                humanoid.WalkSpeed = walkSpeedValue
+            else
+                humanoid.WalkSpeed = 16 -- العودة للسرعة الطبيعية
+            end
+        end
+    end
+})
+
+--------------------------------------------
+-- 3 & 4. JumpPower (Slider + Toggle)
+--------------------------------------------
 PlayerTab:Slider({
-    Title = "JumpPower",
-    Desc = "Increase your character jump power",
+    Title = "JumpPower Value",
+    Desc = "Set the jump power value (Only applies when toggled ON)",
     Min = 50,
     Max = 500,
     Default = 50,
     Callback = function(value)
-        if Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+        jumpPowerValue = value
+        -- تحديث القفز فوراً إذا كان المفتاح مشغلاً
+        if jumpPowerEnabled and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
             local humanoid = Player.Character:FindFirstChildOfClass("Humanoid")
             humanoid.UseJumpPower = true
             humanoid.JumpPower = value
@@ -148,45 +187,107 @@ PlayerTab:Slider({
     end
 })
 
--- 3. Gravity Slider (Starts at Roblox default: 196.2)
+PlayerTab:Toggle({
+    Title = "Enable JumpPower",
+    Desc = "Turn on/off custom jump power",
+    Value = false,
+    Callback = function(state)
+        jumpPowerEnabled = state
+        if Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+            local humanoid = Player.Character:FindFirstChildOfClass("Humanoid")
+            humanoid.UseJumpPower = true
+            if jumpPowerEnabled then
+                humanoid.JumpPower = jumpPowerValue
+            else
+                humanoid.JumpPower = 50 -- العودة للقفز الطبيعي
+            end
+        end
+    end
+})
+
+--------------------------------------------
+-- 5 & 6. Gravity Level (Slider + Toggle)
+--------------------------------------------
 PlayerTab:Slider({
-    Title = "Gravity Level",
-    Desc = "Modify the workspace gravity value",
+    Title = "Gravity Level Value",
+    Desc = "Set the gravity value (Only applies when toggled ON)",
     Min = 0,
     Max = 500,
     Default = 196.2,
     Callback = function(value)
-        workspace.Gravity = value
+        gravityValue = value
+        -- تحديث الجاذبية فوراً إذا كان المفتاح مشغلاً
+        if gravityEnabled then
+            workspace.Gravity = value
+        end
     end
 })
 
--- 4. Spin Speed Slider (Starts at 0 - Disabled)
-local spinVelocity = nil
+PlayerTab:Toggle({
+    Title = "Enable Custom Gravity",
+    Desc = "Turn on/off custom world gravity",
+    Value = false,
+    Callback = function(state)
+        gravityEnabled = state
+        if gravityEnabled then
+            workspace.Gravity = gravityValue
+        else
+            workspace.Gravity = 196.2 -- العودة للجاذبية الطبيعية لروبلوكس
+        end
+    end
+})
+
+--------------------------------------------
+-- 7 & 8. Spin Velocity (Slider + Toggle)
+--------------------------------------------
 PlayerTab:Slider({
-    Title = "Spin Velocity",
-    Desc = "Make your character rotate constantly",
-    Min = 0,
+    Title = "Spin Velocity Value",
+    Desc = "Set the speed of your spinning character",
+    Min = 10,
     Max = 100,
-    Default = 0,
+    Default = 30,
     Callback = function(value)
+        spinValue = value
+        -- تحديث سرعة الدوران فوراً إذا كان المفتاح مشغلاً
+        if spinEnabled and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = Player.Character.HumanoidRootPart
+            if not spinVelocity then
+                spinVelocity = Instance.new("BodyAngularVelocity")
+                spinVelocity.Name = "ScriptSpin"
+                spinVelocity.Parent = hrp
+            end
+            spinVelocity.MaxTorque = Vector3.new(0, math.huge, 0)
+            spinVelocity.AngularVelocity = Vector3.new(0, spinValue, 0)
+        end
+    end
+})
+
+PlayerTab:Toggle({
+    Title = "Enable Spin",
+    Desc = "Turn on/off character spinning animation",
+    Value = false,
+    Callback = function(state)
+        spinEnabled = state
         if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
             local hrp = Player.Character.HumanoidRootPart
-            if value == 0 then
-                if spinVelocity then spinVelocity:Destroy() spinVelocity = nil end
-            else
+            if spinEnabled then
                 if not spinVelocity then
                     spinVelocity = Instance.new("BodyAngularVelocity")
                     spinVelocity.Name = "ScriptSpin"
                     spinVelocity.Parent = hrp
                 end
                 spinVelocity.MaxTorque = Vector3.new(0, math.huge, 0)
-                spinVelocity.AngularVelocity = Vector3.new(0, value, 0)
+                spinVelocity.AngularVelocity = Vector3.new(0, spinValue, 0)
+            else
+                if spinVelocity then spinVelocity:Destroy() spinVelocity = nil end -- إيقاف الدوران
             end
         end
     end
 })
 
--- 5. Infinite Jump Toggle (Starts at Off)
+--------------------------------------------
+-- 9. Infinite Jump Toggle (Default: Off)
+--------------------------------------------
 local infiniteJumpEnabled = false
 PlayerTab:Toggle({
     Title = "Infinite Jump",
@@ -197,7 +298,6 @@ PlayerTab:Toggle({
     end
 })
 
--- Connecting the Infinite Jump system safely to Game Input
 game:GetService("UserInputService").JumpRequest:Connect(function()
     if infiniteJumpEnabled and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
         Player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
@@ -206,16 +306,15 @@ end)
 
 
 -- ==========================================
---  NEW FEATURES: FLY, FLY SPEED & AIR SWIM
+--  FLY & AIR SWIM MODULES
 -- ==========================================
 
--- Fly Variables
 local flying = false
 local flySpeed = 50
 local flyConnection = nil
 local bv, bg = nil, nil
 
--- 6. Fly Toggle (Starts at Off)
+-- 10. Fly Toggle
 PlayerTab:Toggle({
     Title = "Fly",
     Desc = "Toggle flying on or off",
@@ -229,7 +328,6 @@ PlayerTab:Toggle({
         if not hrp or not hum then return end
         
         if flying then
-            -- إنشاء قوى الطيران الفيزيائية
             bv = Instance.new("BodyVelocity")
             bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
             bv.Velocity = Vector3.new(0, 0, 0)
@@ -242,7 +340,6 @@ PlayerTab:Toggle({
             
             hum.PlatformStand = true
             
-            -- تحديث الطيران مع حركة الكاميرا والاتجاهات
             local camera = workspace.CurrentCamera
             flyConnection = game:GetService("RunService").RenderStepped:Connect(function()
                 if not flying or not hrp or not hum then 
@@ -257,7 +354,6 @@ PlayerTab:Toggle({
                     velocity = camera.CFrame:VectorToWorldSpace(Vector3.new(moveDirection.X, 0, moveDirection.Z)) * flySpeed
                 end
                 
-                -- التحكم بالارتفاع عبر زر القفز (Jump) والنزول عبر زر الانحناء (LeftShift)
                 if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then
                     velocity = velocity + Vector3.new(0, flySpeed, 0)
                 elseif game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftShift) then
@@ -268,7 +364,6 @@ PlayerTab:Toggle({
                 bg.CFrame = camera.CFrame
             end)
         else
-            -- إيقاف الطيران وتنظيف الأدوات
             if flyConnection then flyConnection:Disconnect() end
             if bv then bv:Destroy() bv = nil end
             if bg then bg:Destroy() bg = nil end
@@ -277,7 +372,7 @@ PlayerTab:Toggle({
     end
 })
 
--- 7. Fly Speed Slider (Starts at 50)
+-- 11. Fly Speed Slider
 PlayerTab:Slider({
     Title = "Fly Speed",
     Desc = "Adjust your speed while flying",
@@ -289,7 +384,7 @@ PlayerTab:Slider({
     end
 })
 
--- 8. Air Swim Toggle (Starts at Off) [1]
+-- 12. Air Swim Toggle
 local airSwimming = false
 local airSwimConnection = nil
 PlayerTab:Toggle({
@@ -303,7 +398,6 @@ PlayerTab:Toggle({
         if not hum then return end
         
         if airSwimming then
-            -- إجبار حالة الأنيميشن على السباحة طوال فترة التفعيل [1]
             airSwimConnection = game:GetService("RunService").RenderStepped:Connect(function()
                 if hum and airSwimming then
                     hum:ChangeState(Enum.HumanoidStateType.Swimming)
