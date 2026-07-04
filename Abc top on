@@ -543,6 +543,29 @@ MiscTab:Button({
         game:GetService("Lighting").ClockTime = 0
     end
 })
+-- ==========================================
+--  NEWS TAB CONTENT (Flat Layout)
+-- ==========================================
+
+-- 1. Latest Updates Description
+NewsTab:Button({
+    Title = "🔥 Latest Update Logs (v1.2)",
+    Desc = "Added Player Modules (Speed, Jump, Gravity, Spin, Fly, Swim) & Misc Utilities (Anti-AFK, Anti-Kick, Server Utilities, Anti-Fling, Time Changer).",
+    Callback = function() end
+}) -- Fixed the missing bracket and parenthesis here
+
+-- 2. About Us Button
+NewsTab:Button({
+    Title = "ℹ️ Who Are We?",
+    Desc = "Click to know more about the developers behind this project.",
+    Callback = function()
+        WindUI:Notify({
+            Title = "About Us",
+            Content = "We are abc team. Thank you for supporting our work!",
+            Duration = 5
+        })
+    end
+})
 
 -- Automatically open the Home Tab on execute
 Window:SelectTab(HomeTab)
