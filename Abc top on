@@ -411,6 +411,138 @@ PlayerTab:Toggle({
         end
     end
 })
+-- ==========================================
+--  MISC TAB CONTENT (All Default Disabled)
+-- ==========================================
+
+-- Anti-AFK Setup
+local antiAfkEnabled = false
+local virtualUser = game:GetService("VirtualUser")
+Player.Idled:Connect(function()
+    if antiAfkEnabled then
+        virtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        virtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    end
+end)
+
+-- 1. Anti-AFK Toggle
+MiscTab:Toggle({
+    Title = "Anti-AFK",
+    Desc = "Prevents you from being kicked for staying idle",
+    Value = false,
+    Callback = function(state)
+        antiAfkEnabled = state
+        if state then
+            WindUI:Notify({ Title = "Anti-AFK", Content = "Anti-AFK is now active.", Duration = 3 })
+        end
+    end
+})
+
+-- 2. Anti-Kick Toggle
+local antiKickEnabled = false
+local oldKick
+oldKick = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    if antiKickEnabled and self == Player and (method == "Kick" or method == "kick") then
+        WindUI:Notify({ Title = "Anti-Kick", Content = "The game tried to kick you, but it was blocked!", Duration = 5 })
+        return nil
+    end
+    return oldKick(self, ...)
+end)
+
+MiscTab:Toggle({
+    Title = "Anti-Kick Bypass",
+    Desc = "Attempts to block server/client kick methods",
+    Value = false,
+    Callback = function(state)
+        antiKickEnabled = state
+    end
+})
+
+-- 3. Rejoin Server Button
+MiscTab:Button({
+    Title = "Rejoin Server",
+    Desc = "Reconnect instantly to the same server",
+    Callback = function()
+        local teleportService = game:GetService("TeleportService")
+        teleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player)
+    end
+})
+
+-- 4. Server Hop Button
+MiscTab:Button({
+    Title = "Server Hop",
+    Desc = "Transfer automatically to a different server",
+    Callback = function()
+        local teleportService = game:GetService("TeleportService")
+        local httpService = game:GetService("HttpService")
+        local apiApi = "https://roblox.com" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+        
+        local success, result = pcall(function()
+            return httpService:JSONDecode(game:HttpGet(apiApi))
+        end)
+        
+        if success and result and result.data then
+            for _, server in ipairs(result.data) do
+                if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                    teleportService:TeleportToPlaceInstance(game.PlaceId, server.id, Player)
+                    break
+                end
+            end
+        else
+            WindUI:Notify({ Title = "Server Hop", Content = "Failed to find alternative servers.", Duration = 3 })
+        end
+    end
+})
+
+-- 5. Anti-Fling Toggle
+local antiFlingEnabled = false
+local antiFlingConnection = nil
+MiscTab:Toggle({
+    Title = "Anti-Fling",
+    Desc = "Prevents other players from flinging your character",
+    Value = false,
+    Callback = function(state)
+        antiFlingEnabled = state
+        if antiFlingEnabled then
+            antiFlingConnection = game:GetService("RunService").Stepped:Connect(function()
+                if not antiFlingEnabled then antiFlingConnection:Disconnect() return end
+                for _, otherPlayer in ipairs(game:GetService("Players"):GetPlayers()) do
+                    if otherPlayer ~= Player and otherPlayer.Character then
+                        for _, part in ipairs(otherPlayer.Character:GetChildren()) do
+                            if part:IsA("BasePart") then
+                                part.CanCollide = false
+                                part.Velocity = Vector3.new(0, 0, 0)
+                                part.RotVelocity = Vector3.new(0, 0, 0)
+                            end
+                        end
+                    end
+                end
+            end)
+        else
+            if antiFlingConnection then antiFlingConnection:Disconnect() end
+        end
+    end
+})
+
+-- 6. Set Time to Day Button
+MiscTab:Button({
+    Title = "Set Time: Day",
+    Desc = "Changes the local lighting environment to afternoon",
+    Callback = function()
+        game:GetService("Lighting").ClockTime = 14
+    end
+})
+
+-- 7. Set Time to Night Button
+MiscTab:Button({
+    Title = "Set Time: Night",
+    Desc = "Changes the local lighting environment to midnight",
+    Callback = function()
+        game:GetService("Lighting").ClockTime = 0
+    end
+})
 
 -- Automatically open the Home Tab on execute
 Window:SelectTab(HomeTab)
