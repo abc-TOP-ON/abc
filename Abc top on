@@ -1,0 +1,119 @@
+-- LOAD WINDUI LIBRARY (The link is successfully active here)
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+-- [ PLAYER INFORMATION ]
+local Player = game.Players.LocalPlayer
+local DisplayName = Player.DisplayName
+local Name = Player.Name
+local UserID = Player.UserId
+local AccountAge = Player.AccountAge
+local CreationDate = os.date("%Y-%m-%d", os.time() - (AccountAge * 86400))
+
+-- WINDOW CREATION
+local Window = WindUI:CreateWindow({
+    Title = "ABC TOP ON",
+    SubTitle = "dev: hamza000599",
+    Author = "hamza",
+    Size = UDim2.fromOffset(480, 460),
+    Transparent = false,
+    Theme = "Dark",
+    Minimized = false,
+    ToggleKey = Enum.KeyCode.LeftControl
+})
+
+-- TABS CREATION
+local HomeTab = Window:Tab({ Title = "Home", Icon = "home" })
+local MinaTab = Window:Tab({ Title = "Welcome", Icon = "info" })
+local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
+local ScriptTab = Window:Tab({ Title = "Script", Icon = "code" })
+local MiscTab = Window:Tab({ Title = "Misc", Icon = "box" })
+local NewsTab = Window:Tab({ Title = "News", Icon = "newspaper" })
+local settingTab = Window:Tab({ Title = "Settings", Icon = "settings" })
+local FunTab = Window:Tab({ Title = "Fun", Icon = "gamepad" })
+local StatsTab = Window:Tab({ Title = "Stats", Icon = "bar-chart" })
+local EnvironmentTab = Window:Tab({ Title = "Environment", Icon = "globe" })
+local EliteTab = Window:Tab({ Title = "Elite Access", Icon = "star" })
+local InfoTab = Window:Tab({ Title = "Information", Icon = "info" })
+
+-- ==========================================
+--  ANTI-SPAM COPY SYSTEM CONFIGURATION
+-- ==========================================
+
+local lastClickTime = 0
+local clickCooldown = 1.5 
+
+local function safeCopyToClipboard(textToCopy)
+    local currentTime = tick()
+    if currentTime - lastClickTime < clickCooldown then
+        WindUI:Notify({
+            Title = "Copy Failed",
+            Content = "Stop spamming! Please wait a moment.",
+            Duration = 3
+        })
+        return
+    end
+    lastClickTime = currentTime
+    
+    local success = pcall(function()
+        if setclipboard then
+            setclipboard(textToCopy)
+        elseif toclipboard then
+            toclipboard(textToCopy)
+        else
+            error("No clipboard function found")
+        end
+    end)
+    
+    if success then
+        WindUI:Notify({
+            Title = "Success",
+            Content = "Copied to clipboard successfully!",
+            Duration = 3
+        })
+    else
+        WindUI:Notify({
+            Title = "Copy Failed",
+            Content = "Your executor does not support auto-copy.",
+            Duration = 3
+        })
+    end
+end
+
+-- ==========================================
+--  HOME TAB CONTENT (Flat Layout - No Arrows)
+-- ==========================================
+
+HomeTab:Button({
+    Title = "Developer: hamza000599",
+    Desc = "Click to copy developer username",
+    Callback = function()
+        safeCopyToClipboard("hamza000599")
+    end
+})
+
+HomeTab:Button({
+    Title = "Discord: hamza.abc0",
+    Desc = "Click to copy Discord username",
+    Callback = function()
+        safeCopyToClipboard("hamza.abc0")
+    end
+})
+
+-- ==========================================
+--  WELCOME TAB CONTENT (Flat Layout - No Arrows)
+-- ==========================================
+
+MinaTab:Button({
+    Title = "Welcome, " .. DisplayName .. "!",
+    Desc = "Glad to have you here.",
+    Callback = function() end
+})
+
+MinaTab:Button({
+    Title = "About ABC TOP ON",
+    Desc = "This is a premium script designed to enhance your gameplay with automated farming, powerful exploit modules, and utility enhancements.",
+    Callback = function() end
+})
+
+-- Automatically open the Home Tab on execute
+Window:SelectTab(HomeTab)
