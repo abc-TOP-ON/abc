@@ -566,6 +566,145 @@ NewsTab:Button({
         })
     end
 })
+-- ==========================================
+--  FUN TAB CONTENT (All Default Disabled)
+-- ==========================================
+
+-- 1. Drunk Mode Toggle
+local drunkEnabled = false
+local drunkConnection = nil
+FunTab:Toggle({
+    Title = "Drunk Mode",
+    Desc = "Makes your character and camera wobble around hilariously",
+    Value = false,
+    Callback = function(state)
+        drunkEnabled = state
+        local hum = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
+        if drunkEnabled then
+            drunkConnection = game:GetService("RunService").RenderStepped:Connect(function()
+                if not drunkEnabled then drunkConnection:Disconnect() return end
+                local t = tick()
+                if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                    workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame * CFrame.Angles(math.sin(t*4)*0.03, math.cos(t*3)*0.03, math.sin(t*2)*0.02)
+                    if hum then hum.WalkToPoint = Player.Character.HumanoidRootPart.Position + Vector3.new(math.sin(t*2)*2, 0, math.cos(t*2)*2) end
+                end
+            end)
+        else
+            if drunkConnection then drunkConnection:Disconnect() end
+            if hum then hum:Move(Vector3.new(0,0,0)) end
+        end
+    end
+})
+
+-- 2. Body Color Changer Toggle
+local colorLoopEnabled = false
+FunTab:Toggle({
+    Title = "Rainbow Body Loop",
+    Desc = "Constantly changes your character body parts to random colors",
+    Value = false,
+    Callback = function(state)
+        colorLoopEnabled = state
+        task.spawn(function()
+            while colorLoopEnabled do
+                if Player.Character then
+                    for _, part in ipairs(Player.Character:GetChildren()) do
+                        if part:IsA("BasePart") then part.Color = Color3.fromHSV(math.random(), 1, 1) end
+                    end
+                end
+                task.wait(0.2)
+            end
+        end)
+    end
+})
+
+-- 3. Disco Lighting Effect Toggle
+local discoEnabled = false
+local originalAmbient = game:GetService("Lighting").Ambient
+local originalOutdoorAmbient = game:GetService("Lighting").OutdoorAmbient
+FunTab:Toggle({
+    Title = "Disco Lighting Effect",
+    Desc = "Changes the game environment colors rapidly like a party",
+    Value = false,
+    Callback = function(state)
+        discoEnabled = state
+        if discoEnabled then
+            task.spawn(function()
+                while discoEnabled do
+                    local randomColor = Color3.fromHSV(math.random(), 1, 1)
+                    game:GetService("Lighting").Ambient = randomColor
+                    game:GetService("Lighting").OutdoorAmbient = randomColor
+                    task.wait(0.15)
+                end
+            end)
+        else
+            game:GetService("Lighting").Ambient = originalAmbient
+            game:GetService("Lighting").OutdoorAmbient = originalOutdoorAmbient
+        end
+    end
+})
+
+-- 4. Mega Fast Spin Toggle
+local fastSpinEnabled = false
+local fastSpinVelocity = nil
+FunTab:Toggle({
+    Title = "Mega Fast Spin",
+    Desc = "Makes your character rotate at extreme supersonic speeds",
+    Value = false,
+    Callback = function(state)
+        fastSpinEnabled = state
+        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = Player.Character.HumanoidRootPart
+            if fastSpinEnabled then
+                if not fastSpinVelocity then
+                    fastSpinVelocity = Instance.new("BodyAngularVelocity")
+                    fastSpinVelocity.Name = "MegaFastSpin"
+                    fastSpinVelocity.Parent = hrp
+                end
+                fastSpinVelocity.MaxTorque = Vector3.new(0, math.huge, 0)
+                fastSpinVelocity.AngularVelocity = Vector3.new(0, 150, 0)
+            else
+                if fastSpinVelocity then fastSpinVelocity:Destroy() fastSpinVelocity = nil end
+            end
+        end
+    end
+})
+
+-- 5. Hide Accessories Toggle
+local hiddenAccessories = {}
+FunTab:Toggle({
+    Title = "Hide Accessories",
+    Desc = "Instantly hides all hats, hair, and capes attached to you",
+    Value = false,
+    Callback = function(state)
+        local char = Player.Character
+        if not char then return end
+        if state then
+            for _, item in ipairs(char:GetChildren()) do
+                if item:IsA("Accessory") then
+                    table.insert(hiddenAccessories, item)
+                    item.Parent = game:GetService("ReplicatedStorage")
+                end
+            end
+        else
+            for _, item in ipairs(hiddenAccessories) do
+                if item and item:IsA("Accessory") then item.Parent = char end
+            end
+            hiddenAccessories = {}
+        end
+    end
+})
+
+-- 6. Refresh Character Button
+FunTab:Button({
+    Title = "🔄 Refresh Character",
+    Desc = "Instantly clears all applied visual edits and resets your player profile",
+    Callback = function()
+        if Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+            Player.Character:FindFirstChildOfClass("Humanoid").Health = 0
+            WindUI:Notify({ Title = "Character Refreshed", Content = "All local visual properties have been cleaned.", Duration = 3 })
+        end
+    end
+})
 
 -- Automatically open the Home Tab on execute
 Window:SelectTab(HomeTab)
