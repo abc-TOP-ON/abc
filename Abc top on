@@ -807,6 +807,89 @@ settingTab:Toggle({
         end
     end
 })
+-- ==========================================
+--  STATS TAB CONTENT (1 XP Every 10 Seconds)
+-- ==========================================
+
+local statsFileName = "ABCTopOn_PlayerStats.json"
+local HttpService = game:GetService("HttpService")
+
+local playerStats = {
+    Level = 1,
+    XP = 0
+}
+
+pcall(function()
+    if readfile and isfile and isfile(statsFileName) then
+        local savedData = readfile(statsFileName)
+        local decodedStats = HttpService:JSONDecode(savedData)
+        if decodedStats then
+            playerStats = decodedStats
+        end
+    end
+end)
+
+local function savePlayerStats()
+    pcall(function()
+        if writefile then
+            writefile(statsFileName, HttpService:JSONEncode(playerStats))
+        end
+    end)
+end
+
+local scriptStartTime = tick()
+local TimeLabel = StatsTab:Button({
+    Title = "Active Session Time",
+    Desc = "Time elapsed: 00h 00m 00s",
+    Callback = function() end
+})
+
+local LevelLabel = StatsTab:Button({
+    Title = "Script Mastery: Level " .. playerStats.Level,
+    Desc = "Current Experience: " .. playerStats.XP .. " / 100 XP",
+    Callback = function() end
+})
+
+-- BACKGOUND TRACKING LOOP
+task.spawn(function()
+    local tenSecondCounter = 0
+    while task.wait(1) do
+        -- 1. Continuous Session Clock Update (Every 1 second)
+        local elapsed = math.floor(tick() - scriptStartTime)
+        local hours = math.floor(elapsed / 3600)
+        local minutes = math.floor((elapsed % 3600) / 60)
+        local seconds = elapsed % 60
+        
+        TimeLabel:SetDesc(string.format("Time elapsed: %02dh %02dm %02ds", hours, minutes, seconds))
+        
+        -- 2. Level System Increment (Triggers precisely every 10 seconds)
+        tenSecondCounter = tenSecondCounter + 1
+        if tenSecondCounter >= 10 then
+            tenSecondCounter = 0 -- Reset the tracking interval
+            
+            playerStats.XP = playerStats.XP + 1 -- Add exactly 1 XP
+            
+            -- Level Up logic structure validation
+            if playerStats.XP >= 100 then
+                playerStats.Level = playerStats.Level + 1
+                playerStats.XP = playerStats.XP - 100
+                
+                WindUI:Notify({
+                    Title = "🎉 LEVEL UP!",
+                    Content = "Congratulations! You reached Script Mastery Level " .. playerStats.Level .. "!",
+                    Duration = 4
+                })
+            end
+            
+            -- Push structural string layouts onto screen objects
+            LevelLabel:SetTitle("Script Mastery: Level " .. playerStats.Level)
+            LevelLabel:SetDesc("Current Experience: " .. playerStats.XP .. " / 100 XP")
+            
+            -- Permanent local file system storage write execution
+            savePlayerStats()
+        end
+    end
+end)
 
 -- Automatically open the Home Tab on execute
 Window:SelectTab(HomeTab)
