@@ -705,6 +705,108 @@ FunTab:Button({
         end
     end
 })
+-- ==========================================
+--  6. SETTINGS TAB CONTENT (Config & Incognito)
+-- ==========================================
+local configFileName = "ABCTopOn_Config.json"
+
+-- Default configuration structure
+local userConfig = {
+    AutoSave = false,
+    WalkSpeedValue = 16,
+    JumpPowerValue = 50,
+    GravityValue = 196.2,
+    SpinValue = 30
+}
+
+-- Apply configurations to your memory variables upon booting up
+local function applyLoadedConfig()
+    if Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+        if userConfig.AutoSave then
+            walkSpeedValue = userConfig.WalkSpeedValue
+            jumpPowerValue = userConfig.JumpPowerValue
+            gravityValue = userConfig.GravityValue
+            spinValue = userConfig.SpinValue
+            
+            WindUI:Notify({
+                Title = "Config Loaded",
+                Content = "Your saved settings have been automatically applied!",
+                Duration = 3
+            })
+        end
+    end
+end
+
+-- Force write active slider states to local workspace file
+local function saveCurrentConfig()
+    if not userConfig.AutoSave then return end
+    userConfig.WalkSpeedValue = walkSpeedValue or 16
+    userConfig.JumpPowerValue = jumpPowerValue or 50
+    userConfig.GravityValue = gravityValue or 196.2
+    userConfig.SpinValue = spinValue or 30
+    
+    pcall(function()
+        if writefile then
+            writefile(configFileName, game:GetService("HttpService"):JSONEncode(userConfig))
+        end
+    end)
+end
+
+-- Read external JSON save properties on script ignition
+pcall(function()
+    if readfile and isfile and isfile(configFileName) then
+        local data = readfile(configFileName)
+        local decoded = game:GetService("HttpService"):JSONDecode(data)
+        if decoded then
+            userConfig = decoded
+            task.spawn(applyLoadedConfig)
+        end
+    end
+end)
+
+-- 1. Auto Save Toggle Setup
+settingTab:Toggle({
+    Title = "Auto Save Config",
+    Desc = "Automatically save and reload your sliders value next execution",
+    Value = userConfig.AutoSave,
+    Callback = function(state)
+        userConfig.AutoSave = state
+        if state then
+            saveCurrentConfig()
+            WindUI:Notify({ Title = "Config System", Content = "Auto-save is now active.", Duration = 3 })
+        else
+            pcall(function() if delfile and isfile(configFileName) then delfile(configFileName) end end)
+        end
+    end
+})
+
+-- Continuous loop checking to dynamically store slider updates
+task.spawn(function()
+    while task.wait(5) do
+        if userConfig.AutoSave then saveCurrentConfig() end
+    end
+end)
+
+-- 2. Streamer / Incognito Privacy Layout Toggle
+local incognitoEnabled = false
+settingTab:Toggle({
+    Title = "Streamer Mode (Incognito)",
+    Desc = "Hides your real username and display name on the interface for safe recording",
+    Value = false,
+    Callback = function(state)
+        incognitoEnabled = state
+        if incognitoEnabled then
+            Window:SetSubTitle("dev: hamza000599 | User: Hidden Player")
+            WindUI:Notify({
+                Title = "Incognito Mode",
+                Content = "Your profile information is now masked on the script interface.",
+                Duration = 4
+            })
+        else
+            Window:SetSubTitle("dev: hamza000599")
+        end
+    end
+})
 
 -- Automatically open the Home Tab on execute
 Window:SelectTab(HomeTab)
