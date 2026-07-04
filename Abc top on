@@ -974,6 +974,100 @@ EnvironmentTab:Toggle({
         end
     end
 })
+-- ==========================================
+--  ELITE ACCESS TAB CONTENT (All Default Disabled)
+-- ==========================================
+
+-- 1. FPS Booster & Optimizer Toggle (ميزة زيادة الفريمات وتحسين الأداء)
+local fpsBoosterEnabled = false
+local originalShadows = game:GetService("Lighting").GlobalShadows
+
+EliteTab:Toggle({
+    Title = "FPS Booster & Optimizer",
+    Desc = "Disables heavy map shadows, particles, and lighting effects for maximum FPS",
+    Value = false,
+    Callback = function(state)
+        fpsBoosterEnabled = state
+        
+        if fpsBoosterEnabled then
+            -- إطفاء الظلال الكلية للماب لتقليل الضغط على المعالج الرسومي
+            game:GetService("Lighting").GlobalShadows = false
+            
+            -- خفض جودة تأثيرات البيئة (الضباب، الانعكاسات، والبلور) لرفع الفريمات
+            pcall(function()
+                local settings = settings()
+                if settings and settings.Rendering then
+                    settings.Rendering.QualityLevel = Enum.QualityLevel.Level01
+                end
+            end)
+            
+            -- البحث عن الجزيئات الثقيلة مثل الدخان والنار وإطفائها مؤقتًا
+            for _, v in ipairs(workspace:GetDescendants()) do
+                if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
+                    v.Enabled = false
+                end
+            end
+            
+            WindUI:Notify({ Title = "Performance", Content = "FPS Booster activated! Shadows and heavy particles disabled.", Duration = 3 })
+        else
+            -- إعادة إعدادات الجرافيكس والظلال للوضع الطبيعي للماب عند الإطفاء
+            game:GetService("Lighting").GlobalShadows = originalShadows
+            
+            pcall(function()
+                settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
+            end)
+            
+            for _, v in ipairs(workspace:GetDescendants()) do
+                if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
+                    v.Enabled = true
+                end
+            end
+        end
+    end
+})
+
+-- 2. Professional Tab Transition Toggle (ميزة تأثير الانتقال الاحترافي)
+local professionalTransitionEnabled = false
+local TweenService = game:GetService("TweenService")
+
+EliteTab:Toggle({
+    Title = "Smooth Tab Transitions",
+    Desc = "Enables professional fluid fade animations when switching between UI menu tabs",
+    Value = false,
+    Callback = function(state)
+        professionalTransitionEnabled = state
+        
+        -- التعديل على إعدادات مكتبة WindUI لتفعيل الأنميشن الحركي الناعم عند الانتقال
+        if Window and Window.Container then
+            if professionalTransitionEnabled then
+                -- ضبط تأثير التلاشي السلس (Fade & Slide Effect) مع دالة تصفح التبويبات
+                pcall(function()
+                    Window.Container.GroupTransparency = 0
+                    local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                    
+                    -- ربط الأنميشن مع كل ضغطة تبويب
+                    for _, tabButton in ipairs(Window.TabContainer:GetChildren()) do
+                        if tabButton:IsA("TextButton") or tabButton:IsA("ImageButton") then
+                            tabButton.MouseButton1Click:Connect(function()
+                                if professionalTransitionEnabled then
+                                    Window.Container.GroupTransparency = 1
+                                    TweenService:Create(Window.Container, tweenInfo, {GroupTransparency = 0}):Play()
+                                end
+                            end)
+                        end
+                    end
+                end)
+                
+                WindUI:Notify({ Title = "UI Style", Content = "Smooth professional transitions are now active.", Duration = 3 })
+            else
+                -- إلغاء الأنميشن والعودة للانتقال الفوري العادي للتبويبات
+                pcall(function()
+                    Window.Container.GroupTransparency = 0
+                end)
+            end
+        end
+    end
+})
 
 -- Automatically open the Home Tab on execute
 Window:SelectTab(HomeTab)
