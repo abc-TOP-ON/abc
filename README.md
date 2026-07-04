@@ -1,5 +1,5 @@
 -- LOAD FLUENT MODDED LIBRARY
-local Fluent = loadstring(game:HttpGet("https://github.com/StyearX/Fluent-Modded/releases/download/N/Fluent.lua"))()
+local Fluent = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 local SaveManager = Fluent.SaveManager
 local InterfaceManager = Fluent.InterfaceManager
