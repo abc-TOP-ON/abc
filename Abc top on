@@ -1068,6 +1068,30 @@ EliteTab:Toggle({
         end
     end
 })
+-- ==========================================
+--  INFORMATION TAB CONTENT (InfoTab Layout)
+-- ==========================================
+
+-- Creating the text block safely inside the Information Tab using WindUI components
+InfoTab:Button({
+    Title = "👤 Player Information",
+    Desc = string.format(
+        "• Display Name: %s\n• Username: %s\n• Account ID: %d\n• Account Age: %d Days\n• Creation Date: %s", 
+        DisplayName, 
+        Name, 
+        UserID, -- تم ضبط المتغير ليتوافق مع الاسم المكتوب بأول السكربت (UserID)
+        AccountAge, 
+        CreationDate
+    ),
+    Callback = function() 
+        -- اختيار اختياري: إرسال إشعار سريع للمستخدم عند الضغط للتأكيد
+        WindUI:Notify({
+            Title = "Profile Synced",
+            Content = "Your profile account details are successfully loaded.",
+            Duration = 3
+        })
+    end
+})
 
 -- Automatically open the Home Tab on execute
 Window:SelectTab(HomeTab)
