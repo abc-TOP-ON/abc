@@ -1,188 +1,236 @@
--- Run a Restaurant! Absolute Auto-Remote Farm (Delta Fixed & Tested 2026)
-if not game:IsLoaded() then game.Loaded:Wait() end
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local PlayerGui = player:WaitForChild("PlayerGui")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
+-- فرض السيطرة المطلقة وإخفاء الشات وقوائم روبلوكس وقفل الهروب
 pcall(function()
-    if game:GetService("CoreGui"):FindFirstChild("DeltaRestaurantHub") then
-        game:GetService("CoreGui").DeltaRestaurantHub:Destroy()
-    end
+    game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
 end)
 
--- حماية ضد الخمول الثابتة Anti-AFK
-pcall(function()
-    local virtualUser = game:GetService("VirtualUser")
-    game.Players.LocalPlayer.Idled:Connect(function()
-        virtualUser:CaptureController()
-        virtualUser:ClickButton2(Vector2.new(0,0))
-    end)
-end)
-
-local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local Title = Instance.new("TextLabel")
-local ToggleFastFarm = Instance.new("TextButton")
-local ToggleAntiAFK = Instance.new("TextButton")
-local ToggleLag = Instance.new("TextButton")
-local UICorner = Instance.new("UICorner")
-
-ScreenGui.Name = "DeltaRestaurantHub"
-ScreenGui.Parent = game:GetService("CoreGui")
-ScreenGui.ResetOnSpawn = false
-
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-MainFrame.Position = UDim2.new(0.35, 0, 0.25, 0)
-MainFrame.Size = UDim2.new(0, 260, 0, 290)
-MainFrame.Active = true
-MainFrame.Draggable = true
-
-UICorner.CornerRadius = UDim.new(0, 15)
-UICorner.Parent = MainFrame
-
-Title.Name = "Title"
-Title.Parent = MainFrame
-Title.BackgroundColor3 = Color3.fromRGB(45, 20, 75)
-Title.Size = UDim2.new(1, 0, 0, 50)
-Title.Font = Enum.Font.SourceSansBold
-Title.Text = "Silent Hub - Run a Restaurant"
-Title.TextColor3 = Color3.fromRGB(255, 200, 0)
-Title.TextSize = 16
-local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 15)
-TitleCorner.Parent = Title
-
-local FastFarmEnabled, AntiAFKEnabled, LagReducerEnabled = false, false, false
-
--- إخفاء وإظهار القائمة بزر RightControl
-game:GetService("UserInputService").InputBegan:Connect(function(input, gpe)
-    if not gpe and input.KeyCode == Enum.KeyCode.RightControl then
-        MainFrame.Visible = not MainFrame.Visible
-    end
-end)
-
-local function CreateButton(btn, text, pos)
-    btn.Parent = MainFrame
-    btn.BackgroundColor3 = Color3.fromRGB(150, 35, 35)
-    btn.Position = pos
-    btn.Size = UDim2.new(0, 220, 0, 45)
-    btn.Font = Enum.Font.SourceSansBold
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 14
-    local BtnCorner = Instance.new("UICorner")
-    BtnCorner.CornerRadius = UDim.new(0, 10)
-    BtnCorner.Parent = btn
+if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+    player.Character.HumanoidRootPart.Anchored = true
 end
 
-CreateButton(ToggleFastFarm, "تشغيل المزرعة الخارقة الآمنة ⚡", UDim2.new(0, 20, 0, 70))
-CreateButton(ToggleAntiAFK, "مضاد الخمول (Anti-AFK) 🛡️", UDim2.new(0, 20, 0, 140))
-CreateButton(ToggleLag, "تخفيف اللاق ورفع الـ FPS 🚀", UDim2.new(0, 20, 0, 210))
+-- 1. إنشاء الخلفية المعتمة العميقة
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = PlayerGui
+ScreenGui.ResetOnSpawn = false
 
-ToggleFastFarm.MouseButton1Click:Connect(function() 
-    FastFarmEnabled = not FastFarmEnabled 
-    ToggleFastFarm.BackgroundColor3 = FastFarmEnabled and Color3.fromRGB(35, 150, 35) or Color3.fromRGB(150, 35, 35) 
-end)
+local DarkOverlay = Instance.new("Frame")
+DarkOverlay.Size = UDim2.new(1, 0, 1, 0)
+DarkOverlay.BackgroundColor3 = Color3.fromRGB(5, 5, 7)
+DarkOverlay.Parent = ScreenGui
 
-ToggleAntiAFK.MouseButton1Click:Connect(function() 
-    AntiAFKEnabled = not AntiAFKEnabled 
-    ToggleAntiAFK.BackgroundColor3 = AntiAFKEnabled and Color3.fromRGB(35, 150, 35) or Color3.fromRGB(150, 35, 35) 
-end)
+-- 2. تأثير وميض الفلاش الصادم (محاكاة تصوير الكاميرا)
+local FlashFrame = Instance.new("Frame")
+FlashFrame.Size = UDim2.new(1, 0, 1, 0)
+FlashFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+FlashFrame.BackgroundTransparency = 1
+FlashFrame.ZIndex = 10
+FlashFrame.Parent = ScreenGui
 
-ToggleLag.MouseButton1Click:Connect(function()
-    LagReducerEnabled = not LagReducerEnabled
-    ToggleLag.BackgroundColor3 = LagReducerEnabled and Color3.fromRGB(35, 150, 35) or Color3.fromRGB(150, 35, 35)
-    if LagReducerEnabled then
-        pcall(function()
-            game:GetService("Lighting").GlobalShadows = false
-            settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-            for _, v in pairs(workspace:GetDescendants()) do
-                if v:IsA("ParticleEmitter") or v:IsA("Trail") then
-                    v.Enabled = false
-                end
-            end
-        end)
+-- 3. إطار لوحة التحكم العسكرية الفائقة الاحترافية
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 500, 0, 440)
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -220)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+MainFrame.BorderSizePixel = 2
+MainFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
+MainFrame.Parent = DarkOverlay
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
+
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(255, 0, 0)
+UIStroke.Thickness = 2
+UIStroke.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0.1, 0)
+Title.BackgroundColor3 = Color3.fromRGB(50, 0, 0)
+Title.Text = " ⚡ BLACK_HAT_EXPLOIT: MALICIOUS_INFILTRATION ⚡"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 13
+Title.Font = Enum.Font.Code
+Title.Parent = MainFrame
+
+local InfoText = Instance.new("TextLabel")
+InfoText.Size = UDim2.new(1, -24, 0.78, 0)
+InfoText.Position = UDim2.new(0, 12, 0.12, 0)
+InfoText.BackgroundTransparency = 1
+InfoText.TextXAlignment = Enum.TextXAlignment.Left
+InfoText.TextYAlignment = Enum.TextYAlignment.Top
+InfoText.TextColor3 = Color3.fromRGB(0, 255, 150)
+InfoText.TextSize = 12
+InfoText.Font = Enum.Font.Code
+InfoText.Text = ""
+InfoText.Parent = MainFrame
+
+local CountdownText = Instance.new("TextLabel")
+CountdownText.Size = UDim2.new(1, 0, 0.1, 0)
+CountdownText.Position = UDim2.new(0, 0, 0.9, 0)
+CountdownText.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+CountdownText.TextColor3 = Color3.fromRGB(255, 200, 0)
+CountdownText.TextSize = 13
+CountdownText.Font = Enum.Font.Code
+CountdownText.Text = "[SYSTEM]: Ready to fetch logs..."
+CountdownText.Parent = MainFrame
+
+-- استخراج معلومات ونظام تشغيل جهاز الضحية بدقة بالغة للمقلب
+local deviceType = "SYSTEM_DESKTOP_WIN11"
+local deviceLabel = "BIOS_SERIAL_HARD_ENC"
+local wipePaths = {
+    "C:/Windows/System32/drivers/etc",
+    "C:/Users/Admin/Passwords/chrome_pass.txt",
+    "C:/Users/Admin/Pictures/CameraRoll/IMG_012.jpg"
+}
+
+if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+    deviceType = "OS_MOBILE_ANDROID_V14 (تلفون)"
+    deviceLabel = "HARDWARE_PHONE_IMEI_ENC"
+    wipePaths = {
+        "/storage/emulated/0/DCIM/Camera/IMG_2026_PRIVATE.jpg",
+        "/storage/emulated/0/WhatsApp/Media/Databases/msgstore.db",
+        "/storage/emulated/0/Download/Passwords_Backup.txt"
+    }
+end
+local fakeHardwareID = string.format("HWID-%04X-%04X-%04X-GLOBAL", math.random(0, 0xFFFF), math.random(0, 0xFFFF), math.random(0, 0xFFFF))
+
+local function getProgressBar(progress)
+    local totalBars = 22
+    local filledBars = math.floor((progress / 100) * totalBars)
+    local emptyBars = totalBars - filledBars
+    return "[" .. string.rep("█", filledBars) .. string.rep("░", emptyBars) .. "] " .. progress .. "%"
+end
+
+local function typeWrite(guiObject, text, delayTime)
+    for i = 1, #text do
+        guiObject.Text = string.sub(text, 1, i)
+        task.wait(delayTime or 0.005)
     end
-end)
+end
 
--- حلقة المزرعة المطلقة مع نظام التجميع المتعدد للصحون
+local function spawnCrazyPopup()
+    local popup = Instance.new("Frame")
+    popup.Size = UDim2.new(0, 160, 0, 90)
+    popup.Position = UDim2.new(math.random(10, 70)/100, 0, math.random(10, 70)/100, 0)
+    popup.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
+    popup.BorderSizePixel = 2
+    popup.BorderColor3 = Color3.fromRGB(255, 255, 255)
+    popup.Parent = DarkOverlay
+    
+    local popCorner = Instance.new("UICorner")
+    popCorner.CornerRadius = UDim.new(0, 5)
+    popCorner.Parent = popup
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, 0, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = "⚠️ SECURITY FAULT\nDATA_BREACH\n[CRITICAL_ERR]"
+    lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+    lbl.Font = Enum.Font.Code
+    lbl.TextSize = 11
+    lbl.Parent = popup
+
+    local targetPos = popup.Position + UDim2.new(0, math.random(-30, 30), 0, math.random(-30, 30))
+    local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out, -1, true)
+    local tween = TweenService:Create(popup, tweenInfo, {Position = targetPos})
+    tween:Play()
+end
+
+-- تتابع المقلب المدمر الكلي المدعوم بكل الأفكار
 task.spawn(function()
-    while true do
-        task.wait(0.08) 
-        if FastFarmEnabled then
-            pcall(function()
-                
-                -- إخفاء نص التحذير المزعج تلقائياً
-                local playerGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
-                if playerGui then
-                    for _, element in pairs(playerGui:GetDescendants()) do
-                        if element:IsA("TextLabel") and (element.Text:match("Sinks") or element.Text:match("full")) then
-                            element.Visible = false
-                        end
-                    end
-                end
-
-                -- [نظام الطحن الإجباري للصحون المتسخة والمغاسل]
-                -- السكربت سيبحث أولاً إذا كان هناك صحون متسخة أو مغاسل تحتاج لتفريغ ويقوم بإنهاءها بالكامل دفعة واحدة
-                local foundDirtyWork = true
-                while foundDirtyWork and FastFarmEnabled do
-                    foundDirtyWork = false
-                    for _, obj in pairs(workspace:GetDescendants()) do
-                        if obj:IsA("ProximityPrompt") and obj.Enabled then
-                            local action = obj.ActionText:lower()
-                            local name = obj.Parent.Name:lower()
-                            
-                            -- أولوية 1: تفريغ وغسيل الصحون في المغسلة فوراً وبشكل متتابع
-                            if action:match("wash") or action:match("sink") or action:match("clean") or name:match("sink") or name:match("dishwasher") then
-                                fireproximityprompt(obj)
-                                task.wait(0.02)
-                                fireproximityprompt(obj)
-                                task.wait(0.03)
-                                foundDirtyWork = true
-                                break -- العودة لفحص الماب وتكرار العملية حتى ينتهي الغسيل بالكامل
-                            
-                            -- أولوية 2: استمرار التقاط الصحون المتسخة من الطاولات دون توقف لصحن واحد
-                            elseif action:match("clear") or name:match("dirty") or (action:match("pick") and name:match("dish")) then
-                                fireproximityprompt(obj)
-                                task.wait(0.04)
-                                foundDirtyWork = true
-                                break 
-                            end
-                        end
-                    end
-                    task.wait(0.01) -- مهلة متناهية الصغر لمنع تعليق اللعبة أثناء حلقة التنظيف المتواصلة
-                end
-
-                -- بقية العمليات الروتينية (تعمل فقط عندما يكون المطعم نظيفاً تماماً من الصحون المتسخة والمغاسل مفرغة)
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if not FastFarmEnabled then break end
-                    
-                    if obj:IsA("ProximityPrompt") and obj.Enabled then
-                        local action = obj.ActionText:lower()
-                        local name = obj.Parent.Name:lower()
-                        
-                        -- 1. جمع الكاش تلقائياً فوراً
-                        if action:match("claim") or action:match("collect") or name:match("cash") or name:match("money") or name:match("coin") then
-                            fireproximityprompt(obj)
-                            task.wait(0.02)
-                        
-                        -- 2. التقاط الأكل الجاهز من الفرن أو الكاونتر
-                        elseif action:match("take") or action:match("pick") or action:match("get") or (action:match("collect") and (name:match("stove") or name:match("counter"))) then
-                            fireproximityprompt(obj)
-                            task.wait(0.04)
-                            
-                        -- 3. تقديم الطعام للزبائن 
-                        elseif action:match("serve") or action:match("deliver") or action:match("give") or name:match("customer") or name:match("seat") then
-                            fireproximityprompt(obj)
-                            task.wait(0.04)
-                            
-                        -- 4. الطبخ واستقبال الزبائن الجدد
-                        elseif action:match("cook") or action:match("order") or name:match("stove") or action:match("seat") or action:match("welcome") then
-                            fireproximityprompt(obj)
-                            task.wait(0.02)
-                        end
-                    end
-                end
-            end)
-        end
+    task.wait(0.5)
+    
+    -- المرحلة 1: تفعيل نظام الاختراق والمحاكاة التقنية
+    typeWrite(InfoText, "> Opening remote port 8080 and exploiting kernel...\n> [✔] Phone Camera Protocol: FORCED_CONNECTION_STABLE\n> [✔] Local GPS Gateway: EXTRACTED_METADATA", 0.004)
+    task.wait(0.8)
+    
+    -- تشغيل فلاش الكاميرا المفاجئ الصادم فوراً عند نجاح الاتصال بالكاميرا
+    FlashFrame.BackgroundTransparency = 0
+    local flashTween = TweenService:Create(FlashFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1})
+    flashTween:Play()
+    
+    -- المرحلة 2: حقن بيانات الضحية
+    local dataString = string.format(
+        "\n\n[☠] REMOTE TARGET DUMP IDENTIFIED:\n" ..
+        " ├─ Target Nickname: %s\n" ..
+        " ├─ Roblox Client ID: %s\n" ..
+        " ├─ System Architecture: %s\n" ..
+        " └─ %s: %s",
+        player.Name, tostring(player.UserId), deviceType, deviceLabel, fakeHardwareID
+    )
+    InfoText.Text = InfoText.Text .. dataString
+    InfoText.TextColor3 = Color3.fromRGB(255, 45, 45)
+    task.wait(1)
+    
+    -- المرحلة 3: التليجرام وجملة الشكر الحرفية
+    InfoText.Text = InfoText.Text .. "\n\n[⚡] جار نقل جميع معلومات البوت إلى سيرفر تليجرام..."
+    InfoText.TextColor3 = Color3.fromRGB(0, 190, 255)
+    task.wait(1.2)
+    
+    InfoText.Text = InfoText.Text .. "\n\n[🔥] تم سحب جميع معلومات من حسابك وشكراً الك! 😉"
+    InfoText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    task.wait(1.2)
+    
+    -- محاكاة تحذير حرارة الهاتف وانفجار البطارية لزيادة التوتر الجسدي
+    InfoText.Text = InfoText.Text .. "\n\n[⚠️ WARNING]: Phone CPU Temp: 94°C! Battery swelling risk detected!"
+    InfoText.TextColor3 = Color3.fromRGB(255, 165, 0)
+    task.wait(1.5)
+    
+    -- محاكاة مسح ملفات التلفون الحساسة (الصور والواتساب) عبر الكونسول
+    for progress = 0, 100, 5 do
+        local randomFile = wipePaths[math.random(1, #wipePaths)]
+        CountdownText.Text = "🗑️ DELETING_FILE: " .. randomFile .. " \n" .. getProgressBar(progress)
+        task.wait(0.04)
     end
+    task.wait(0.5)
+
+    -- المرحلة 4: العداد التنازلي الـ 5 ثوانٍ المرعب مع النوافذ المنبثقة والاهتزاز العنيف
+    local originalPos = MainFrame.Position
+    for i = 5, 1, -1 do
+        CountdownText.Text = "❌ DEVICE_WIPE_FORCE IN: " .. i .. "s (NO_ABORT)"
+        CountdownText.TextColor3 = Color3.fromRGB(255, 0, 0)
+        CountdownText.TextSize = 14
+        
+        spawnCrazyPopup()
+        spawnCrazyPopup()
+        
+        task.spawn(function()
+            for _ = 1, 15 do
+                local offsetX = math.random(-16, 16)
+                local offsetY = math.random(-16, 16)
+                MainFrame.Position = originalPos + UDim2.new(0, offsetX, 0, offsetY)
+                UIStroke.Color = Color3.fromRGB(255, math.random(0, 255), math.random(0, 50))
+                DarkOverlay.BackgroundColor3 = Color3.fromRGB(math.random(40, 160), 5, 5)
+                task.wait(0.03)
+            end
+            MainFrame.Position = originalPos
+        end)
+        
+        task.wait(1)
+    end
+    
+    -- محاكاة شاشة الموت الحمراء العسكرية الكاملة قبل الطرد بنصف ثانية
+    DarkOverlay.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    MainFrame.Visible = false
+    
+    local CrashText = Instance.new("TextLabel")
+    CrashText.Size = UDim2.new(0.8, 0, 0.4, 0)
+    CrashText.Position = UDim2.new(0.1, 0, 0.3, 0)
+    CrashText.BackgroundTransparency = 1
+    CrashText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CrashText.TextSize = 18
+    CrashText.Font = Enum.Font.Code
+    CrashText.Text = "KERNEL_SECURITY_CHECK_FAILURE\n\nA critical error has occurred and your machine has been locked down to prevent hardware melting.\n\nSYS_STATUS: HARD_WIPE_COMPLETE"
+    CrashText.Parent = DarkOverlay
+    
+    task.wait(1)
+    
+    -- الطرد النهائي بالرسالة المطلوبة بدقة وحرفية عالية
+    player:Kick("تم سحب جميع معلومات نقلها البوت بتليجرام")
 end)
