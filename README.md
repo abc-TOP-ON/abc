@@ -1,9 +1,9 @@
 --[[
-    ╔══════════════════════════════════════════════════════════════╗
-    ║         ULTIMATE VERIFICATION SYSTEM v3.0                  ║
-    ║        10× BETTER - Premium Quality Script                 ║
-    ║        Optimized for Mobile & PC                           ║
-    ╚══════════════════════════════════════════════════════════════╝
+    ╔══════════════════════════════════════════════════════════════════════════════╗
+    ║                    💎 ULTIMATE VERIFICATION SYSTEM v4.0 💎                  ║
+    ║                        100× BETTER - GOD TIER                              ║
+    ║              Premium Features • Advanced Security • Perfect UI             ║
+    ╚══════════════════════════════════════════════════════════════════════════════╝
 --]]
 
 local player = game.Players.LocalPlayer
@@ -12,247 +12,449 @@ local userInputService = game:GetService("UserInputService")
 local runService = game:GetService("RunService")
 local tweenService = game:GetService("TweenService")
 local starterGui = game:GetService("StarterGui")
+local lighting = game:GetService("Lighting")
+local soundService = game:GetService("SoundService")
 
 -- ==========================================
--- ====== PREMIUM CODE GENERATOR ======
+-- ====== 🎵 SOUND SYSTEM ======
+-- ==========================================
+
+local SoundSystem = {}
+
+function SoundSystem.createSound(id, volume)
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://" .. tostring(id)
+    sound.Volume = volume or 0.5
+    sound.Parent = soundService
+    return sound
+end
+
+function SoundSystem.playSuccess()
+    local sound = SoundSystem.createSound(9120384075, 0.4)
+    sound:Play()
+    task.wait(sound.TimeLength or 1)
+    sound:Destroy()
+end
+
+function SoundSystem.playError()
+    local sound = SoundSystem.createSound(9120384075, 0.3)
+    sound.PlaybackSpeed = 0.7
+    sound:Play()
+    task.wait(sound.TimeLength or 0.5)
+    sound:Destroy()
+end
+
+function SoundSystem.playClick()
+    local sound = SoundSystem.createSound(9120384075, 0.2)
+    sound.PlaybackSpeed = 1.5
+    sound:Play()
+    task.wait(0.1)
+    sound:Destroy()
+end
+
+function SoundSystem.playVerified()
+    local sound = SoundSystem.createSound(9120384075, 0.6)
+    sound.PlaybackSpeed = 0.5
+    sound:Play()
+    task.wait(sound.TimeLength or 1.5)
+    sound:Destroy()
+end
+
+-- ==========================================
+-- ====== 🌟 PREMIUM ANIMATION ENGINE ======
+-- ==========================================
+
+local AnimationEngine = {}
+
+function AnimationEngine.createTween(object, properties, duration, style, direction, repeatCount)
+    style = style or Enum.EasingStyle.Quad
+    direction = direction or Enum.EasingDirection.Out
+    repeatCount = repeatCount or 0
+    
+    local tweenInfo = TweenInfo.new(
+        duration or 0.3,
+        style,
+        direction,
+        repeatCount or 0,
+        false,
+        0
+    )
+    local tween = tweenService:Create(object, tweenInfo, properties)
+    return tween
+end
+
+function AnimationEngine.shake(frame, intensity, duration, repeatCount)
+    intensity = intensity or 12
+    duration = duration or 0.6
+    repeatCount = repeatCount or 1
+    local originalPos = frame.Position
+    
+    local tween = AnimationEngine.createTween(frame, {
+        Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset + intensity,
+                            originalPos.Y.Scale, originalPos.Y.Offset)
+    }, 0.05, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+    
+    local count = repeatCount or 6
+    for i = 1, count do
+        local offset = (i % 2 == 0) and intensity or -intensity
+        local progress = i / count
+        intensity = intensity * (1 - progress * 0.7)
+        
+        tween = AnimationEngine.createTween(frame, {
+            Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset + offset * (1 - progress * 0.5),
+                                originalPos.Y.Scale, originalPos.Y.Offset)
+        }, 0.05, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+        tween:Play()
+        tween.Completed:Wait()
+    end
+    
+    AnimationEngine.createTween(frame, {
+        Position = originalPos
+    }, 0.1):Play()
+end
+
+function AnimationEngine.pulse(object, scale, duration, repeatCount)
+    scale = scale or 1.1
+    duration = duration or 0.3
+    repeatCount = repeatCount or 1
+    local originalSize = object.Size
+    
+    for i = 1, repeatCount do
+        local tween1 = AnimationEngine.createTween(object, {
+            Size = UDim2.new(originalSize.X.Scale * scale, originalSize.X.Offset * scale,
+                            originalSize.Y.Scale * scale, originalSize.Y.Offset * scale)
+        }, duration / 2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        tween1:Play()
+        tween1.Completed:Wait()
+        
+        local tween2 = AnimationEngine.createTween(object, {
+            Size = originalSize
+        }, duration / 2, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+        tween2:Play()
+        tween2.Completed:Wait()
+    end
+end
+
+function AnimationEngine.fadeIn(object, duration)
+    duration = duration or 0.3
+    object.Visible = true
+    object.BackgroundTransparency = 1
+    
+    local tween = AnimationEngine.createTween(object, {
+        BackgroundTransparency = 0
+    }, duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    tween:Play()
+    return tween
+end
+
+function AnimationEngine.fadeOut(object, duration)
+    duration = duration or 0.3
+    
+    local tween = AnimationEngine.createTween(object, {
+        BackgroundTransparency = 1
+    }, duration, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+    tween:Play()
+    tween.Completed:Connect(function()
+        object.Visible = false
+    end)
+    return tween
+end
+
+function AnimationEngine.scaleIn(object, duration)
+    duration = duration or 0.3
+    object.Size = UDim2.new(0, 0, 0, 0)
+    local targetSize = object:GetAttribute("TargetSize") or object.Size
+    
+    local tween = AnimationEngine.createTween(object, {
+        Size = targetSize
+    }, duration, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    tween:Play()
+    return tween
+end
+
+function AnimationEngine.rotate(object, degrees, duration)
+    duration = duration or 0.5
+    local tween = AnimationEngine.createTween(object, {
+        Rotation = degrees
+    }, duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    tween:Play()
+    return tween
+end
+
+function AnimationEngine.bounce(object, height, duration)
+    height = height or 20
+    duration = duration or 0.6
+    local originalPos = object.Position
+    
+    local tween1 = AnimationEngine.createTween(object, {
+        Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset,
+                            originalPos.Y.Scale, originalPos.Y.Offset - height)
+    }, duration * 0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    tween1:Play()
+    tween1.Completed:Wait()
+    
+    local tween2 = AnimationEngine.createTween(object, {
+        Position = originalPos
+    }, duration * 0.6, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out)
+    tween2:Play()
+    return tween2
+end
+
+-- ==========================================
+-- ====== 🎨 ADVANCED COLOR SYSTEM ======
+-- ==========================================
+
+local ColorSystem = {}
+
+function ColorSystem.hexToRGB(hex)
+    hex = hex:gsub("#", "")
+    return Color3.fromRGB(
+        tonumber("0x" .. hex:sub(1, 2)) or 255,
+        tonumber("0x" .. hex:sub(3, 4)) or 255,
+        tonumber("0x" .. hex:sub(5, 6)) or 255
+    )
+end
+
+function ColorSystem.lerp(color1, color2, t)
+    return Color3.new(
+        color1.R + (color2.R - color1.R) * t,
+        color1.G + (color2.G - color1.G) * t,
+        color1.B + (color2.B - color1.B) * t
+    )
+end
+
+function ColorSystem.random()
+    return Color3.fromRGB(
+        math.random(0, 255),
+        math.random(0, 255),
+        math.random(0, 255)
+    )
+end
+
+function ColorSystem.isLight(color)
+    local brightness = (color.R * 0.299 + color.G * 0.587 + color.B * 0.114)
+    return brightness > 0.5
+end
+
+-- ==========================================
+-- ====== 🔐 ADVANCED CODE GENERATOR ======
 -- ==========================================
 
 local CodeGenerator = {}
 
--- Advanced character sets
-local CHAR_SETS = {
+-- Character sets
+local CHARS = {
     NUMBERS = "0123456789",
     UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
     LOWERCASE = "abcdefghijklmnopqrstuvwxyz",
     SYMBOLS = "!@#$%^&*()_+-=[]{}|;:,.<>?",
     SAFE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
     HEX = "0123456789ABCDEF",
-    VOWELS = "AEIOU",
-    CONSONANTS = "BCDFGHJKLMNPQRSTVWXYZ"
+    BINARY = "01",
+    EMOJI = "🔴🟠🟡🟢🔵🟣⚪⚫",
+    SPECIAL = "αβγδεζηθικλμνξπρστυφχψω"
 }
 
-function CodeGenerator.generate(length, options)
-    options = options or {}
-    local charset = options.charset or CHAR_SETS.UPPERCASE .. CHAR_SETS.NUMBERS
-    
-    local code = ""
-    for i = 1, length do
-        local idx = math.random(1, #charset)
-        code = code .. string.sub(charset, idx, idx)
-    end
-    return code
-end
-
-function CodeGenerator.generateSecure(length)
-    local charset = CHAR_SETS.UPPERCASE .. CHAR_SETS.NUMBERS .. CHAR_SETS.SYMBOLS
-    local code = ""
-    
-    -- Ensure at least one of each type
-    local hasUpper = false
-    local hasNumber = false
-    local hasSymbol = false
-    
-    while not (hasUpper and hasNumber and hasSymbol) do
-        code = ""
-        hasUpper = false
-        hasNumber = false
-        hasSymbol = false
-        
-        for i = 1, length do
-            local idx = math.random(1, #charset)
-            local char = string.sub(charset, idx, idx)
-            code = code .. char
+-- Code type configurations
+local CODE_TYPES = {
+    {
+        id = "pin",
+        name = "🔢 PIN Code",
+        icon = "🔢",
+        generator = function(length) 
+            local code = ""
+            for i = 1, length do code = code .. math.random(0, 9) end
+            return code
+        end,
+        length = 6,
+        strength = 0.3,
+        color = Color3.fromRGB(255, 200, 0),
+        description = "6-digit numeric code"
+    },
+    {
+        id = "letters",
+        name = "🔤 Letters Only",
+        icon = "🔤",
+        generator = function(length)
+            local code = ""
+            local chars = CHARS.UPPERCASE
+            for i = 1, length do
+                local idx = math.random(1, #chars)
+                code = code .. string.sub(chars, idx, idx)
+            end
+            return code
+        end,
+        length = 6,
+        strength = 0.4,
+        color = Color3.fromRGB(100, 200, 255),
+        description = "6 uppercase letters"
+    },
+    {
+        id = "alphanumeric",
+        name = "🔑 Alphanumeric",
+        icon = "🔑",
+        generator = function(length)
+            local code = ""
+            local chars = CHARS.UPPERCASE .. CHARS.NUMBERS
+            for i = 1, length do
+                local idx = math.random(1, #chars)
+                code = code .. string.sub(chars, idx, idx)
+            end
+            return code
+        end,
+        length = 6,
+        strength = 0.6,
+        color = Color3.fromRGB(0, 200, 100),
+        description = "Mix of letters and numbers"
+    },
+    {
+        id = "secure",
+        name = "🔐 Secure Code",
+        icon = "🔐",
+        generator = function(length)
+            local chars = CHARS.UPPERCASE .. CHARS.NUMBERS .. CHARS.SYMBOLS
+            local code = ""
+            local hasUpper = false
+            local hasNumber = false
+            local hasSymbol = false
             
-            if string.match(char, "%u") then hasUpper = true end
-            if string.match(char, "%d") then hasNumber = true end
-            if string.match(char, "[%p]") then hasSymbol = true end
+            while not (hasUpper and hasNumber and hasSymbol) do
+                code = ""
+                hasUpper = false
+                hasNumber = false
+                hasSymbol = false
+                
+                for i = 1, length do
+                    local idx = math.random(1, #chars)
+                    local char = string.sub(chars, idx, idx)
+                    code = code .. char
+                    
+                    if string.match(char, "%u") then hasUpper = true end
+                    if string.match(char, "%d") then hasNumber = true end
+                    if string.match(char, "[%p]") then hasSymbol = true end
+                end
+            end
+            return code
+        end,
+        length = 8,
+        strength = 1.0,
+        color = Color3.fromRGB(200, 100, 255),
+        description = "Strong with symbols & numbers"
+    },
+    {
+        id = "readable",
+        name = "🗣️ Readable",
+        icon = "🗣️",
+        generator = function(length)
+            local vowels = "AEIOU"
+            local consonants = "BCDFGHJKLMNPQRSTVWXYZ"
+            local code = ""
+            for i = 1, length do
+                local idx = math.random(1, #(i % 2 == 1 and consonants or vowels))
+                code = code .. string.sub(i % 2 == 1 and consonants or vowels, idx, idx)
+            end
+            return code
+        end,
+        length = 6,
+        strength = 0.45,
+        color = Color3.fromRGB(255, 200, 100),
+        description = "Easy to read and remember"
+    },
+    {
+        id = "segmented",
+        name = "📦 Segmented",
+        icon = "📦",
+        generator = function(length)
+            local parts = 3
+            local partLength = 4
+            local segments = {}
+            local chars = CHARS.UPPERCASE .. CHARS.NUMBERS
+            
+            for i = 1, parts do
+                local segment = ""
+                for j = 1, partLength do
+                    local idx = math.random(1, #chars)
+                    segment = segment .. string.sub(chars, idx, idx)
+                end
+                table.insert(segments, segment)
+            end
+            return table.concat(segments, "-")
+        end,
+        length = 14,
+        strength = 0.75,
+        color = Color3.fromRGB(100, 200, 200),
+        description = "3 groups of 4 characters"
+    },
+    {
+        id = "hex",
+        name = "🟣 Hexadecimal",
+        icon = "🟣",
+        generator = function(length)
+            local chars = CHARS.HEX
+            local code = ""
+            for i = 1, length do
+                local idx = math.random(1, #chars)
+                code = code .. string.sub(chars, idx, idx)
+            end
+            return code
+        end,
+        length = 8,
+        strength = 0.55,
+        color = Color3.fromRGB(255, 150, 255),
+        description = "Hexadecimal characters"
+    },
+    {
+        id = "binary",
+        name = "🔢 Binary",
+        icon = "🔢",
+        generator = function(length)
+            local chars = CHARS.BINARY
+            local code = ""
+            for i = 1, length do
+                local idx = math.random(1, #chars)
+                code = code .. string.sub(chars, idx, idx)
+            end
+            return code
+        end,
+        length = 12,
+        strength = 0.35,
+        color = Color3.fromRGB(100, 255, 100),
+        description = "Binary sequence (0 & 1)"
+    },
+    {
+        id = "emoji",
+        name = "😊 Emoji Code",
+        icon = "😊",
+        generator = function(length)
+            local emojis = {"🔴","🟠","🟡","🟢","🔵","🟣","⚪","⚫","❤️","💛","💚","💙","💜","🧡"}
+            local code = ""
+            for i = 1, length do
+                code = code .. emojis[math.random(1, #emojis)]
+            end
+            return code
+        end,
+        length = 4,
+        strength = 0.5,
+        color = Color3.fromRGB(255, 100, 200),
+        description = "Emoji sequence (fun!)"
+    }
+}
+
+function CodeGenerator.generate(typeId, length)
+    for _, typeData in ipairs(CODE_TYPES) do
+        if typeData.id == typeId then
+            return typeData.generator(typeData.length)
         end
     end
-    
-    return code
+    return CODE_TYPES[1].generator(CODE_TYPES[1].length)
 end
 
-function CodeGenerator.generatePronounceable(length)
-    local code = ""
-    for i = 1, length do
-        if i % 2 == 1 then
-            local idx = math.random(1, #CHAR_SETS.CONSONANTS)
-            code = code .. string.sub(CHAR_SETS.CONSONANTS, idx, idx)
-        else
-            local idx = math.random(1, #CHAR_SETS.VOWELS)
-            code = code .. string.sub(CHAR_SETS.VOWELS, idx, idx)
-        end
-    end
-    return code
-end
-
-function CodeGenerator.generateSegmented(parts, partLength)
-    parts = parts or 3
-    partLength = partLength or 4
-    local segments = {}
-    
-    for i = 1, parts do
-        local segment = CodeGenerator.generate(partLength, {
-            charset = CHAR_SETS.UPPERCASE .. CHAR_SETS.NUMBERS
-        })
-        table.insert(segments, segment)
-    end
-    
-    return table.concat(segments, "-")
-end
-
-function CodeGenerator.generatePIN(length)
-    local code = ""
-    for i = 1, length do
-        code = code .. math.random(0, 9)
-    end
-    return code
+function CodeGenerator.getAllTypes()
+    return CODE_TYPES
 end
 
 -- ==========================================
--- ====== PREMIUM ANIMATION SYSTEM ======
--- ==========================================
-
-local AnimationSystem = {}
-
-function AnimationSystem.createTween(object, properties, duration, style)
-    style = style or Enum.EasingStyle.Quad
-    local tweenInfo = TweenInfo.new(
-        duration or 0.3,
-        style,
-        Enum.EasingDirection.Out
-    )
-    local tween = tweenService:Create(object, tweenInfo, properties)
-    return tween
-end
-
-function AnimationSystem.shake(frame, intensity, duration)
-    intensity = intensity or 10
-    duration = duration or 0.5
-    local originalPos = frame.Position
-    
-    local shakeTween = tweenService:Create(frame, TweenInfo.new(0.05, Enum.EasingStyle.Linear), {
-        Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset + intensity, 
-                            originalPos.Y.Scale, originalPos.Y.Offset)
-    })
-    
-    for i = 1, math.floor(duration / 0.05) do
-        intensity = intensity * (1 - (i / (duration / 0.05)) * 0.8)
-        local offset = (i % 2 == 0) and intensity or -intensity
-        shakeTween = tweenService:Create(frame, TweenInfo.new(0.05, Enum.EasingStyle.Linear), {
-            Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset + offset,
-                                originalPos.Y.Scale, originalPos.Y.Offset)
-        })
-        shakeTween:Play()
-        shakeTween.Completed:Wait()
-    end
-    
-    tweenService:Create(frame, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-        Position = originalPos
-    }):Play()
-end
-
-function AnimationSystem.pulse(object, sizeMultiplier, duration)
-    sizeMultiplier = sizeMultiplier or 1.1
-    duration = duration or 0.3
-    
-    local originalSize = object.Size
-    local tween1 = tweenService:Create(object, TweenInfo.new(duration / 2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = UDim2.new(originalSize.X.Scale * sizeMultiplier, originalSize.X.Offset * sizeMultiplier,
-                        originalSize.Y.Scale * sizeMultiplier, originalSize.Y.Offset * sizeMultiplier)
-    })
-    local tween2 = tweenService:Create(object, TweenInfo.new(duration / 2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-        Size = originalSize
-    })
-    
-    tween1:Play()
-    tween1.Completed:Connect(function()
-        tween2:Play()
-    end)
-end
-
-function AnimationSystem.fadeIn(object, duration)
-    duration = duration or 0.3
-    object.BackgroundTransparency = 1
-    object.Visible = true
-    
-    local tween = tweenService:Create(object, TweenInfo.new(duration, Enum.EasingStyle.Quad), {
-        BackgroundTransparency = 0
-    })
-    tween:Play()
-    return tween
-end
-
-function AnimationSystem.fadeOut(object, duration)
-    duration = duration or 0.3
-    local tween = tweenService:Create(object, TweenInfo.new(duration, Enum.EasingStyle.Quad), {
-        BackgroundTransparency = 1
-    })
-    tween:Play()
-    return tween
-end
-
--- ==========================================
--- ====== PREMIUM UI BUILDER ======
--- ==========================================
-
-local UIBuilder = {}
-
-function UIBuilder.createLabel(parent, text, size, position, color, fontSize)
-    local label = Instance.new("TextLabel")
-    label.Parent = parent
-    label.Size = size
-    label.Position = position
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = color or Color3.fromRGB(255, 255, 255)
-    label.TextSize = fontSize or 14
-    label.Font = Enum.Font.Gotham
-    label.TextXAlignment = Enum.TextXAlignment.Center
-    label.TextYAlignment = Enum.TextYAlignment.Center
-    label.TextScaled = false
-    return label
-end
-
-function UIBuilder.createButton(parent, text, size, position, color, textColor)
-    local button = Instance.new("TextButton")
-    button.Parent = parent
-    button.Size = size
-    button.Position = position
-    button.BackgroundColor3 = color or Color3.fromRGB(60, 65, 100)
-    button.Text = text
-    button.TextColor3 = textColor or Color3.fromRGB(255, 255, 255)
-    button.TextScaled = true
-    button.Font = Enum.Font.GothamBold
-    button.BorderSizePixel = 0
-    button.AutoButtonColor = true
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = button
-    
-    return button
-end
-
-function UIBuilder.createFrame(parent, size, position, color, transparency)
-    local frame = Instance.new("Frame")
-    frame.Parent = parent
-    frame.Size = size
-    frame.Position = position
-    frame.BackgroundColor3 = color or Color3.fromRGB(30, 35, 55)
-    frame.BackgroundTransparency = transparency or 0
-    frame.BorderSizePixel = 0
-    frame.ClipsDescendants = true
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = frame
-    
-    return frame
-end
-
--- ==========================================
--- ====== MAIN VERIFICATION SYSTEM ======
+-- ====== 🎯 MAIN VERIFICATION SYSTEM ======
 -- ==========================================
 
 local VerificationSystem = {}
@@ -261,225 +463,247 @@ VerificationSystem.__index = VerificationSystem
 function VerificationSystem.new()
     local self = setmetatable({}, VerificationSystem)
     
+    -- Core variables
+    self.currentTypeIndex = 3
+    self.currentCode = ""
+    self.attempts = 0
+    self.maxAttempts = 5
+    self.isVerified = false
+    self.isAnimating = false
+    self.isClosing = false
+    self.codeHistory = {}
+    self.startTime = tick()
+    
+    -- Create UI
+    self:createGUI()
+    self:setupEvents()
+    self:generateNewCode()
+    self:startParticleSystem()
+    
+    -- Auto-refresh timer
+    self.autoRefreshTimer = 0
+    self.autoRefreshInterval = 60 -- Refresh code every 60 seconds
+    
+    runService.Heartbeat:Connect(function(delta)
+        self.autoRefreshTimer = self.autoRefreshTimer + delta
+        if self.autoRefreshTimer >= self.autoRefreshInterval and not self.isVerified then
+            self.autoRefreshTimer = 0
+            self:generateNewCode()
+            self.instruction.Text = "🔄 Auto-refreshed! New code generated"
+            self.instruction.TextColor3 = Color3.fromRGB(0, 200, 255)
+            task.wait(1)
+            self.instruction.Text = "✍️ Enter the code shown above"
+            self.instruction.TextColor3 = Color3.fromRGB(200, 200, 220)
+        end
+    end)
+    
+    return self
+end
+
+-- ==========================================
+-- ====== 🎨 UI CREATION ======
+-- ==========================================
+
+function VerificationSystem:createGUI()
     self.screenGui = Instance.new("ScreenGui")
     self.screenGui.Name = "VerificationGUI"
     self.screenGui.Parent = playerGui
     self.screenGui.ResetOnSpawn = false
     self.screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    self.screenGui.IgnoreGuiInset = true
     
-    -- Variables
-    self.currentTypeIndex = 1
-    self.currentCode = ""
-    self.attempts = 0
-    self.maxAttempts = 4
-    self.isVerified = false
-    self.isAnimating = false
+    -- === Background ===
+    self.background = Instance.new("Frame")
+    self.background.Parent = self.screenGui
+    self.background.Size = UDim2.new(1, 0, 1, 0)
+    self.background.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    self.background.BackgroundTransparency = 0.65
+    self.background.BorderSizePixel = 0
     
-    -- Code types
-    self.codeTypes = {
-        {
-            name = "🔢 PIN",
-            generator = function() return CodeGenerator.generatePIN(6) end,
-            strength = 0.4,
-            strengthText = "🟡 Medium",
-            color = Color3.fromRGB(255, 200, 0)
-        },
-        {
-            name = "🔤 Letters",
-            generator = function() return CodeGenerator.generate(6, {charset = CHAR_SETS.UPPERCASE}) end,
-            strength = 0.5,
-            strengthText = "🟡 Medium",
-            color = Color3.fromRGB(100, 200, 255)
-        },
-        {
-            name = "🔑 Alphanumeric",
-            generator = function() return CodeGenerator.generate(6, {charset = CHAR_SETS.UPPERCASE .. CHAR_SETS.NUMBERS}) end,
-            strength = 0.7,
-            strengthText = "🟢 Strong",
-            color = Color3.fromRGB(0, 200, 100)
-        },
-        {
-            name = "🔐 Secure",
-            generator = function() return CodeGenerator.generateSecure(8) end,
-            strength = 1.0,
-            strengthText = "🟣 Very Strong",
-            color = Color3.fromRGB(200, 100, 255)
-        },
-        {
-            name = "🗣️ Readable",
-            generator = function() return CodeGenerator.generatePronounceable(6) end,
-            strength = 0.5,
-            strengthText = "🟡 Medium",
-            color = Color3.fromRGB(255, 200, 100)
-        },
-        {
-            name = "📦 Segmented",
-            generator = function() return CodeGenerator.generateSegmented(3, 4) end,
-            strength = 0.8,
-            strengthText = "🟢 Strong",
-            color = Color3.fromRGB(100, 200, 200)
-        },
-        {
-            name = "🟣 Hex",
-            generator = function() return CodeGenerator.generate(6, {charset = CHAR_SETS.HEX}) end,
-            strength = 0.6,
-            strengthText = "🟢 Good",
-            color = Color3.fromRGB(255, 150, 255)
-        }
-    }
+    -- === Main Container ===
+    self.mainFrame = Instance.new("Frame")
+    self.mainFrame.Parent = self.background
+    self.mainFrame.Size = UDim2.new(0, 420, 0, 500)
+    self.mainFrame.Position = UDim2.new(0.5, -210, 0.5, -250)
+    self.mainFrame.BackgroundColor3 = Color3.fromRGB(18, 20, 38)
+    self.mainFrame.BorderSizePixel = 0
+    self.mainFrame.ClipsDescendants = true
+    self.mainFrame:SetAttribute("TargetSize", self.mainFrame.Size)
     
-    self:buildUI()
-    self:setupEvents()
-    self:generateNewCode()
+    -- Main frame corner
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 20)
+    mainCorner.Parent = self.mainFrame
     
-    return self
-end
-
-function VerificationSystem:buildUI()
-    -- Background Overlay with blur effect
-    self.overlay = Instance.new("Frame")
-    self.overlay.Parent = self.screenGui
-    self.overlay.Size = UDim2.new(1, 0, 1, 0)
-    self.overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    self.overlay.BackgroundTransparency = 0.6
-    self.overlay.BorderSizePixel = 0
-    
-    -- Main Frame
-    self.frame = UIBuilder.createFrame(self.overlay, 
-        UDim2.new(0, 380, 0, 440),
-        UDim2.new(0.5, -190, 0.5, -220),
-        Color3.fromRGB(25, 28, 45),
-        0
-    )
-    
-    -- Glow effect
-    self.glow = Instance.new("Frame")
-    self.glow.Parent = self.frame
-    self.glow.Size = UDim2.new(1.02, 0, 1.02, 0)
-    self.glow.Position = UDim2.new(-0.01, 0, -0.01, 0)
-    self.glow.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-    self.glow.BackgroundTransparency = 0.9
-    self.glow.BorderSizePixel = 0
-    self.glow.ZIndex = -1
+    -- === Glow Border ===
+    self.glowBorder = Instance.new("Frame")
+    self.glowBorder.Parent = self.mainFrame
+    self.glowBorder.Size = UDim2.new(1.02, 0, 1.02, 0)
+    self.glowBorder.Position = UDim2.new(-0.01, 0, -0.01, 0)
+    self.glowBorder.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+    self.glowBorder.BackgroundTransparency = 0.85
+    self.glowBorder.BorderSizePixel = 0
+    self.glowBorder.ZIndex = -1
     
     local glowCorner = Instance.new("UICorner")
-    glowCorner.CornerRadius = UDim.new(0, 16)
-    glowCorner.Parent = self.glow
+    glowCorner.CornerRadius = UDim.new(0, 22)
+    glowCorner.Parent = self.glowBorder
     
-    -- Title Bar with gradient
+    -- Glow pulse animation
+    local glowPulse = AnimationEngine.createTween(self.glowBorder, {
+        BackgroundTransparency = 0.8
+    }, 1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1)
+    glowPulse:Play()
+    glowPulse:GetPropertyChangedSignal("BackgroundTransparency"):Connect(function()
+        local tween2 = AnimationEngine.createTween(self.glowBorder, {
+            BackgroundTransparency = 0.85
+        }, 1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1)
+        tween2:Play()
+    end)
+    
+    -- === Title Bar ===
     self.titleBar = Instance.new("Frame")
-    self.titleBar.Parent = self.frame
-    self.titleBar.Size = UDim2.new(1, 0, 0, 50)
-    self.titleBar.BackgroundColor3 = Color3.fromRGB(40, 45, 85)
+    self.titleBar.Parent = self.mainFrame
+    self.titleBar.Size = UDim2.new(1, 0, 0, 55)
+    self.titleBar.BackgroundColor3 = Color3.fromRGB(35, 40, 75)
     self.titleBar.BorderSizePixel = 0
     
-    local titleBarCorner = Instance.new("UICorner")
-    titleBarCorner.CornerRadius = UDim.new(0, 16)
-    titleBarCorner.Parent = self.titleBar
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 20)
+    titleCorner.Parent = self.titleBar
     
     -- Title
-    self.title = UIBuilder.createLabel(self.titleBar, "🔐 Security Verification", 
-        UDim2.new(1, -40, 1, 0),
-        UDim2.new(0, 0, 0, 0),
-        Color3.fromRGB(255, 255, 255),
-        20
-    )
-    self.title.Font = Enum.Font.GothamBold
+    self.titleText = Instance.new("TextLabel")
+    self.titleText.Parent = self.titleBar
+    self.titleText.Size = UDim2.new(1, -50, 1, 0)
+    self.titleText.Position = UDim2.new(0, 10, 0, 0)
+    self.titleText.BackgroundTransparency = 1
+    self.titleText.Text = "🔐 Security Verification"
+    self.titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    self.titleText.TextSize = 20
+    self.titleText.Font = Enum.Font.GothamBold
+    self.titleText.TextXAlignment = Enum.TextXAlignment.Left
     
-    -- Close Button
+    -- Close button
     self.closeBtn = Instance.new("TextButton")
     self.closeBtn.Parent = self.titleBar
     self.closeBtn.Size = UDim2.new(0, 35, 0, 35)
-    self.closeBtn.Position = UDim2.new(1, -40, 0.5, -17.5)
+    self.closeBtn.Position = UDim2.new(1, -42, 0.5, -17.5)
     self.closeBtn.BackgroundTransparency = 1
     self.closeBtn.Text = "✕"
-    self.closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+    self.closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
     self.closeBtn.TextSize = 20
     self.closeBtn.Font = Enum.Font.GothamBold
     self.closeBtn.BorderSizePixel = 0
     
     self.closeBtn.MouseButton1Click:Connect(function()
+        SoundSystem.playClick()
         self:close()
     end)
     
-    -- Icon with pulse animation
-    self.icon = UIBuilder.createLabel(self.frame, "🛡️", 
-        UDim2.new(0, 60, 0, 60),
-        UDim2.new(0.5, -30, 0, 60),
-        Color3.fromRGB(255, 200, 0),
-        45
-    )
+    -- === Icon ===
+    self.iconFrame = Instance.new("Frame")
+    self.iconFrame.Parent = self.mainFrame
+    self.iconFrame.Size = UDim2.new(0, 65, 0, 65)
+    self.iconFrame.Position = UDim2.new(0.5, -32.5, 0, 70)
+    self.iconFrame.BackgroundColor3 = Color3.fromRGB(40, 45, 80)
+    self.iconFrame.BorderSizePixel = 0
     
-    -- Code Container with dynamic border
+    local iconCorner = Instance.new("UICorner")
+    iconCorner.CornerRadius = UDim.new(0, 50)
+    iconCorner.Parent = self.iconFrame
+    
+    self.iconText = Instance.new("TextLabel")
+    self.iconText.Parent = self.iconFrame
+    self.iconText.Size = UDim2.new(1, 0, 1, 0)
+    self.iconText.BackgroundTransparency = 1
+    self.iconText.Text = "🛡️"
+    self.iconText.TextSize = 40
+    self.iconText.TextColor3 = Color3.fromRGB(255, 200, 0)
+    self.iconText.Font = Enum.Font.GothamBold
+    
+    -- === Code Display ===
     self.codeContainer = Instance.new("Frame")
-    self.codeContainer.Parent = self.frame
-    self.codeContainer.Size = UDim2.new(0.85, 0, 0, 60)
-    self.codeContainer.Position = UDim2.new(0.075, 0, 0, 130)
-    self.codeContainer.BackgroundColor3 = Color3.fromRGB(30, 35, 60)
+    self.codeContainer.Parent = self.mainFrame
+    self.codeContainer.Size = UDim2.new(0.85, 0, 0, 65)
+    self.codeContainer.Position = UDim2.new(0.075, 0, 0, 145)
+    self.codeContainer.BackgroundColor3 = Color3.fromRGB(28, 32, 58)
     self.codeContainer.BorderSizePixel = 2
     self.codeContainer.BorderColor3 = Color3.fromRGB(0, 200, 255)
     
-    local codeContainerCorner = Instance.new("UICorner")
-    codeContainerCorner.CornerRadius = UDim.new(0, 12)
-    codeContainerCorner.Parent = self.codeContainer
+    local codeCorner = Instance.new("UICorner")
+    codeCorner.CornerRadius = UDim.new(0, 12)
+    codeCorner.Parent = self.codeContainer
     
-    -- Code Display
+    -- Code text
     self.codeDisplay = Instance.new("TextLabel")
     self.codeDisplay.Parent = self.codeContainer
     self.codeDisplay.Size = UDim2.new(1, 0, 1, 0)
     self.codeDisplay.BackgroundTransparency = 1
     self.codeDisplay.Text = "----"
     self.codeDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
-    self.codeDisplay.TextSize = 36
+    self.codeDisplay.TextSize = 38
     self.codeDisplay.Font = Enum.Font.GothamBold
-    self.codeDisplay.TextScaled = true
     self.codeDisplay.TextXAlignment = Enum.TextXAlignment.Center
     self.codeDisplay.TextYAlignment = Enum.TextYAlignment.Center
     
-    -- Copy button on code
+    -- Copy button
     self.copyBtn = Instance.new("TextButton")
     self.copyBtn.Parent = self.codeContainer
-    self.copyBtn.Size = UDim2.new(0, 30, 0, 30)
-    self.copyBtn.Position = UDim2.new(1, -35, 0.5, -15)
-    self.copyBtn.BackgroundTransparency = 1
+    self.copyBtn.Size = UDim2.new(0, 35, 0, 35)
+    self.copyBtn.Position = UDim2.new(1, -40, 0.5, -17.5)
+    self.copyBtn.BackgroundTransparency = 0.8
+    self.copyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
     self.copyBtn.Text = "📋"
-    self.copyBtn.TextSize = 16
+    self.copyBtn.TextSize = 18
     self.copyBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
     self.copyBtn.BorderSizePixel = 0
     
+    local copyCorner = Instance.new("UICorner")
+    copyCorner.CornerRadius = UDim.new(0, 8)
+    copyCorner.Parent = self.copyBtn
+    
     self.copyBtn.MouseButton1Click:Connect(function()
+        SoundSystem.playClick()
         if self.currentCode then
             setclipboard(self.currentCode)
             starterGui:SetCore("SendNotification", {
                 Title = "📋 Copied!",
                 Text = "Code copied to clipboard",
-                Duration = 2
+                Duration = 2,
+                Icon = "rbxassetid://8739636080"
             })
+            AnimationEngine.pulse(self.copyBtn, 1.2, 0.3)
         end
     end)
     
-    -- Code Type Label
-    self.codeTypeLabel = UIBuilder.createLabel(self.frame, "🔑 Alphanumeric",
-        UDim2.new(0.85, 0, 0, 22),
-        UDim2.new(0.075, 0, 0, 195),
-        Color3.fromRGB(150, 160, 200),
-        13
-    )
+    -- === Code Type Label ===
+    self.typeLabel = Instance.new("TextLabel")
+    self.typeLabel.Parent = self.mainFrame
+    self.typeLabel.Size = UDim2.new(0.85, 0, 0, 22)
+    self.typeLabel.Position = UDim2.new(0.075, 0, 0, 215)
+    self.typeLabel.BackgroundTransparency = 1
+    self.typeLabel.Text = "🔑 Alphanumeric"
+    self.typeLabel.TextColor3 = Color3.fromRGB(150, 160, 200)
+    self.typeLabel.TextSize = 13
+    self.typeLabel.Font = Enum.Font.Gotham
     
-    -- Instruction
-    self.instruction = UIBuilder.createLabel(self.frame, "✍️ Enter the code shown above",
-        UDim2.new(0.9, 0, 0, 25),
-        UDim2.new(0.05, 0, 0, 222),
-        Color3.fromRGB(200, 200, 220),
-        16
-    )
+    -- === Instruction ===
+    self.instruction = Instance.new("TextLabel")
+    self.instruction.Parent = self.mainFrame
+    self.instruction.Size = UDim2.new(0.9, 0, 0, 25)
+    self.instruction.Position = UDim2.new(0.05, 0, 0, 242)
+    self.instruction.BackgroundTransparency = 1
+    self.instruction.Text = "✍️ Enter the code shown above"
+    self.instruction.TextColor3 = Color3.fromRGB(200, 200, 220)
+    self.instruction.TextSize = 16
     self.instruction.Font = Enum.Font.Gotham
     
-    -- Input Box with shadow
+    -- === Input Box ===
     self.inputContainer = Instance.new("Frame")
-    self.inputContainer.Parent = self.frame
-    self.inputContainer.Size = UDim2.new(0.8, 0, 0, 48)
-    self.inputContainer.Position = UDim2.new(0.1, 0, 0, 255)
+    self.inputContainer.Parent = self.mainFrame
+    self.inputContainer.Size = UDim2.new(0.8, 0, 0, 50)
+    self.inputContainer.Position = UDim2.new(0.1, 0, 0, 275)
     self.inputContainer.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     self.inputContainer.BackgroundTransparency = 0.3
     self.inputContainer.BorderSizePixel = 0
@@ -495,7 +719,7 @@ function VerificationSystem:buildUI()
     self.inputBox.BackgroundColor3 = Color3.fromRGB(35, 38, 65)
     self.inputBox.Text = ""
     self.inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    self.inputBox.TextSize = 28
+    self.inputBox.TextSize = 30
     self.inputBox.PlaceholderText = "Enter code..."
     self.inputBox.PlaceholderColor3 = Color3.fromRGB(100, 110, 160)
     self.inputBox.Font = Enum.Font.GothamBold
@@ -510,324 +734,93 @@ function VerificationSystem:buildUI()
     -- Auto uppercase
     self.inputBox:GetPropertyChangedSignal("Text"):Connect(function()
         self.inputBox.Text = string.upper(self.inputBox.Text)
+        
+        -- Live character count
+        local charCount = #self.inputBox.Text
+        if charCount > 0 then
+            self.instruction.Text = "✍️ " .. charCount .. " characters entered"
+            self.instruction.TextColor3 = Color3.fromRGB(0, 200, 255)
+            task.wait(0.5)
+            self.instruction.Text = "✍️ Enter the code shown above"
+            self.instruction.TextColor3 = Color3.fromRGB(200, 200, 220)
+        end
     end)
     
-    -- Button Row
-    self.confirmBtn = UIBuilder.createButton(self.frame, "✅ Confirm",
-        UDim2.new(0.32, 0, 0, 44),
-        UDim2.new(0.075, 0, 0, 315),
-        Color3.fromRGB(0, 200, 120),
-        Color3.fromRGB(255, 255, 255)
-    )
+    -- === Button Row ===
+    -- Confirm button
+    self.confirmBtn = Instance.new("TextButton")
+    self.confirmBtn.Parent = self.mainFrame
+    self.confirmBtn.Size = UDim2.new(0.32, 0, 0, 46)
+    self.confirmBtn.Position = UDim2.new(0.075, 0, 0, 340)
+    self.confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
+    self.confirmBtn.Text = "✅ Confirm"
+    self.confirmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    self.confirmBtn.TextScaled = true
     self.confirmBtn.Font = Enum.Font.GothamBold
+    self.confirmBtn.BorderSizePixel = 0
     
-    self.refreshBtn = UIBuilder.createButton(self.frame, "🔄",
-        UDim2.new(0.25, 0, 0, 44),
-        UDim2.new(0.42, 0, 0, 315),
-        Color3.fromRGB(60, 65, 110),
-        Color3.fromRGB(255, 255, 255)
-    )
+    local confirmCorner = Instance.new("UICorner")
+    confirmCorner.CornerRadius = UDim.new(0, 10)
+    confirmCorner.Parent = self.confirmBtn
     
-    self.changeTypeBtn = UIBuilder.createButton(self.frame, "🎲",
-        UDim2.new(0.25, 0, 0, 44),
-        UDim2.new(0.70, 0, 0, 315),
-        Color3.fromRGB(120, 60, 180),
-        Color3.fromRGB(255, 255, 255)
-    )
+    -- Refresh button
+    self.refreshBtn = Instance.new("TextButton")
+    self.refreshBtn.Parent = self.mainFrame
+    self.refreshBtn.Size = UDim2.new(0.25, 0, 0, 46)
+    self.refreshBtn.Position = UDim2.new(0.42, 0, 0, 340)
+    self.refreshBtn.BackgroundColor3 = Color3.fromRGB(60, 65, 110)
+    self.refreshBtn.Text = "🔄"
+    self.refreshBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    self.refreshBtn.TextScaled = true
+    self.refreshBtn.Font = Enum.Font.GothamBold
+    self.refreshBtn.BorderSizePixel = 0
     
-    -- Strength Indicator
-    self.strengthBar = Instance.new("Frame")
-    self.strengthBar.Parent = self.frame
-    self.strengthBar.Size = UDim2.new(0.7, 0, 0, 6)
-    self.strengthBar.Position = UDim2.new(0.15, 0, 0, 375)
-    self.strengthBar.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
-    self.strengthBar.BorderSizePixel = 0
+    local refreshCorner = Instance.new("UICorner")
+    refreshCorner.CornerRadius = UDim.new(0, 10)
+    refreshCorner.Parent = self.refreshBtn
     
-    local strengthBarCorner = Instance.new("UICorner")
-    strengthBarCorner.CornerRadius = UDim.new(0, 3)
-    strengthBarCorner.Parent = self.strengthBar
+    -- Change type button
+    self.changeBtn = Instance.new("TextButton")
+    self.changeBtn.Parent = self.mainFrame
+    self.changeBtn.Size = UDim2.new(0.25, 0, 0, 46)
+    self.changeBtn.Position = UDim2.new(0.70, 0, 0, 340)
+    self.changeBtn.BackgroundColor3 = Color3.fromRGB(120, 60, 180)
+    self.changeBtn.Text = "🎲"
+    self.changeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    self.changeBtn.TextScaled = true
+    self.changeBtn.Font = Enum.Font.GothamBold
+    self.changeBtn.BorderSizePixel = 0
+    
+    local changeCorner = Instance.new("UICorner")
+    changeCorner.CornerRadius = UDim.new(0, 10)
+    changeCorner.Parent = self.changeBtn
+    
+    -- === Strength Bar ===
+    self.strengthContainer = Instance.new("Frame")
+    self.strengthContainer.Parent = self.mainFrame
+    self.strengthContainer.Size = UDim2.new(0.7, 0, 0, 8)
+    self.strengthContainer.Position = UDim2.new(0.15, 0, 0, 400)
+    self.strengthContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
+    self.strengthContainer.BorderSizePixel = 0
+    
+    local strengthCorner = Instance.new("UICorner")
+    strengthCorner.CornerRadius = UDim.new(0, 4)
+    strengthCorner.Parent = self.strengthContainer
     
     self.strengthFill = Instance.new("Frame")
-    self.strengthFill.Parent = self.strengthBar
+    self.strengthFill.Parent = self.strengthContainer
     self.strengthFill.Size = UDim2.new(1, 0, 1, 0)
     self.strengthFill.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
     self.strengthFill.BorderSizePixel = 0
     
-    local strengthFillCorner = Instance.new("UICorner")
-    strengthFillCorner.CornerRadius = UDim.new(0, 3)
-    strengthFillCorner.Parent = self.strengthFill
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(0, 4)
+    fillCorner.Parent = self.strengthFill
     
-    self.strengthLabel = UIBuilder.createLabel(self.frame, "🔒 Strong",
-        UDim2.new(0.7, 0, 0, 20),
-        UDim2.new(0.15, 0, 0, 383),
-        Color3.fromRGB(150, 200, 150),
-        12
-    )
-    
-    -- Attempts counter
-    self.attemptsLabel = UIBuilder.createLabel(self.frame, "Attempts: 0/4",
-        UDim2.new(0.7, 0, 0, 18),
-        UDim2.new(0.15, 0, 0, 407),
-        Color3.fromRGB(150, 150, 180),
-        11
-    )
-    
-    -- Success overlay (hidden)
-    self.successOverlay = Instance.new("Frame")
-    self.successOverlay.Parent = self.frame
-    self.successOverlay.Size = UDim2.new(1, 0, 1, 0)
-    self.successOverlay.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-    self.successOverlay.BackgroundTransparency = 1
-    self.successOverlay.BorderSizePixel = 0
-    self.successOverlay.Visible = false
-    
-    local successCorner = Instance.new("UICorner")
-    successCorner.CornerRadius = UDim.new(0, 16)
-    successCorner.Parent = self.successOverlay
-    
-    self.successIcon = UIBuilder.createLabel(self.successOverlay, "✅",
-        UDim2.new(0, 80, 0, 80),
-        UDim2.new(0.5, -40, 0.3, -40),
-        Color3.fromRGB(255, 255, 255),
-        60
-    )
-    
-    self.successText = UIBuilder.createLabel(self.successOverlay, "VERIFIED!",
-        UDim2.new(0.9, 0, 0, 40),
-        UDim2.new(0.05, 0, 0.6, 0),
-        Color3.fromRGB(255, 255, 255),
-        32
-    )
-    self.successText.Font = Enum.Font.GothamBold
-end
-
-function VerificationSystem:setupEvents()
-    -- Confirm button
-    self.confirmBtn.MouseButton1Click:Connect(function()
-        self:verifyCode()
-    end)
-    
-    -- Refresh button
-    self.refreshBtn.MouseButton1Click:Connect(function()
-        self:generateNewCode()
-        AnimationSystem.pulse(self.codeContainer, 1.05, 0.2)
-    end)
-    
-    -- Change type button
-    self.changeTypeBtn.MouseButton1Click:Connect(function()
-        self:changeCodeType()
-        AnimationSystem.pulse(self.changeTypeBtn, 1.1, 0.2)
-    end)
-    
-    -- Enter key
-    self.inputBox.FocusLost:Connect(function(enterPressed)
-        if enterPressed then
-            self:verifyCode()
-        end
-    end)
-    
-    -- Tap outside to dismiss keyboard
-    self.overlay.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            self.inputBox:ReleaseFocus()
-        end
-    end)
-    
-    -- Draggable window
-    local dragging = false
-    local dragStart = nil
-    local startPos = nil
-    
-    self.titleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or 
-           input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = self.frame.Position
-        end
-    end)
-    
-    self.titleBar.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or 
-           input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    
-    userInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.Touch or 
-                        input.UserInputType == Enum.UserInputType.MouseMovement) then
-            local delta = input.Position - dragStart
-            self.frame.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-end
-
-function VerificationSystem:updateStrength(strengthValue, text)
-    self.strengthFill.Size = UDim2.new(strengthValue, 0, 1, 0)
-    
-    if strengthValue >= 0.7 then
-        self.strengthFill.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-        self.strengthLabel.Text = "🔒 " .. text
-        self.strengthLabel.TextColor3 = Color3.fromRGB(150, 255, 150)
-        self.codeContainer.BorderColor3 = Color3.fromRGB(0, 200, 100)
-    elseif strengthValue >= 0.4 then
-        self.strengthFill.BackgroundColor3 = Color3.fromRGB(255, 200, 0)
-        self.strengthLabel.Text = "🔓 " .. text
-        self.strengthLabel.TextColor3 = Color3.fromRGB(255, 220, 100)
-        self.codeContainer.BorderColor3 = Color3.fromRGB(255, 200, 0)
-    else
-        self.strengthFill.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        self.strengthLabel.Text = "⚠️ " .. text
-        self.strengthLabel.TextColor3 = Color3.fromRGB(255, 150, 150)
-        self.codeContainer.BorderColor3 = Color3.fromRGB(255, 50, 50)
-    end
-end
-
-function VerificationSystem:generateNewCode()
-    local typeData = self.codeTypes[self.currentTypeIndex]
-    self.currentCode = typeData.generator()
-    
-    -- Animate code change
-    local tween = tweenService:Create(self.codeDisplay, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-        TextColor3 = Color3.fromRGB(255, 255, 0)
-    })
-    tween:Play()
-    tween.Completed:Connect(function()
-        self.codeDisplay.Text = self.currentCode
-        tweenService:Create(self.codeDisplay, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-            TextColor3 = Color3.fromRGB(255, 255, 255)
-        }):Play()
-    end)
-    
-    self.codeTypeLabel.Text = "🔑 " .. typeData.name
-    self:updateStrength(typeData.strength, typeData.strengthText)
-    
-    self.inputBox.Text = ""
-    self.inputBox.BackgroundColor3 = Color3.fromRGB(35, 38, 65)
-    self.instruction.Text = "✍️ Enter the code shown above"
-    self.instruction.TextColor3 = Color3.fromRGB(200, 200, 220)
-    
-    print("🔑 New Code: " .. self.currentCode)
-end
-
-function VerificationSystem:changeCodeType()
-    self.currentTypeIndex = self.currentTypeIndex + 1
-    if self.currentTypeIndex > #self.codeTypes then
-        self.currentTypeIndex = 1
-    end
-    
-    self:generateNewCode()
-    self.attempts = 0
-    self:updateAttempts()
-    
-    self.instruction.Text = "🔄 New code type generated!"
-    self.instruction.TextColor3 = Color3.fromRGB(0, 200, 255)
-    
-    AnimationSystem.pulse(self.codeContainer, 1.08, 0.3)
-end
-
-function VerificationSystem:updateAttempts()
-    self.attemptsLabel.Text = "Attempts: " .. self.attempts .. "/" .. self.maxAttempts
-    
-    if self.attempts >= self.maxAttempts then
-        self.attemptsLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-    else
-        self.attemptsLabel.TextColor3 = Color3.fromRGB(150, 150, 180)
-    end
-end
-
-function VerificationSystem:verifyCode()
-    if self.isVerified or self.isAnimating then return end
-    
-    local userInput = self.inputBox.Text
-    
-    if userInput == "" then
-        self.instruction.Text = "⚠️ Please enter the code!"
-        self.instruction.TextColor3 = Color3.fromRGB(255, 200, 0)
-        self.inputBox.BackgroundColor3 = Color3.fromRGB(200, 150, 0)
-        AnimationSystem.shake(self.inputContainer, 5, 0.3)
-        task.wait(0.5)
-        self.inputBox.BackgroundColor3 = Color3.fromRGB(35, 38, 65)
-        self.instruction.Text = "✍️ Enter the code shown above"
-        self.instruction.TextColor3 = Color3.fromRGB(200, 200, 220)
-        return
-    end
-    
-    -- Remove dashes
-    local cleanInput = string.gsub(userInput, "-", "")
-    local cleanCode = string.gsub(self.currentCode, "-", "")
-    
-    if cleanInput == cleanCode then
-        -- ✅ SUCCESS
-        self.isVerified = true
-        self.isAnimating = true
-        
-        self.inputBox.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-        self.instruction.Text = "✅ VERIFIED! You are human ✅"
-        self.instruction.TextColor3 = Color3.fromRGB(0, 255, 0)
-        self.confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-        
-        print("✅ Verification Successful! Code: " .. self.currentCode)
-        
-        -- Success animation
-        self.successOverlay.Visible = true
-        self.successOverlay.BackgroundTransparency = 1
-        
-        local tween1 = tweenService:Create(self.successOverlay, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
-            BackgroundTransparency = 0.2
-        })
-        tween1:Play()
-        
-        -- Pulse icon
-        AnimationSystem.pulse(self.successIcon, 1.2, 0.5)
-        
-        -- Show notification
-        starterGui:SetCore("SendNotification", {
-            Title = "✅ Verification Successful",
-            Text = "You have been verified as human! 🎉",
-            Duration = 3,
-            Icon = "rbxassetid://8739636080"
-        })
-        
-        task.wait(0.8)
-        
-        -- Fade out and close
-        local tween2 = tweenService:Create(self.overlay, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
-            BackgroundTransparency = 1
-        })
-        tween2:Play()
-        
-        local tween3 = tweenService:Create(self.frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
-            Size = UDim2.new(0, 0, 0, 0)
-        })
-        tween3:Play()
-        
-        tween3.Completed:Connect(function()
-            self:close()
-        end)
-        
-        -- 🔥 RUN YOUR CODE HERE AFTER VERIFICATION 🔥
-        -- Example:
-        -- game:GetService("ReplicatedStorage"):FindFirstChild("VerifyEvent"):FireServer()
-        -- Or enable features, teleport, etc.
-        
-    else
-        -- ❌ FAILED
-        self.attempts = self.attempts + 1
-        self:updateAttempts()
-        
-        local remaining = self.maxAttempts - self.attempts
-        
-        self.inputBox.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-        self.instruction.Text = "❌ Incorrect! " .. remaining .. " attempt(s) left"
-        self.instruction.TextColor3 = Color3.fromRGB(255, 0, 0)
-        
-        print("❌ Incorrect Code! Input: " .. userInput .. " | Correct: " .. self.currentCode)
-        
-        -- Shake animation
+    self.strengthLabel = Instance.new("TextLabel")
+    self.strengthLabel.Parent = self.mainFrame
+    self.strengthLabel.Size = UDim2.new(0.7, 0, 0, 20)
+    self.strengthLabel.Position = UDim2.new(0.15, 0, 0, 410)
+    self.strengthLabel.BackgroundTransparency = 1
+    self.strengthLabel.Text = "🔒 Strong"
+    self.strengthLabel.TextColor3 = Color3.from
