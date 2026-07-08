@@ -1,10 +1,10 @@
 -- ================================================
--- نظام تحقق بسيط - بدون أي ميزات إضافية
+-- Verification System - English + Large UI
 -- ================================================
 
 local player = game.Players.LocalPlayer
 
--- توليد رمز عشوائي 5 أحرف
+-- Generate random 5-character code
 local function generateCode()
     local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     local code = ""
@@ -15,41 +15,52 @@ local function generateCode()
     return code
 end
 
--- إنشاء واجهة بسيطة
+-- Create large GUI
 local function createGUI()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "CaptchaGUI"
     screenGui.Parent = game:GetService("CoreGui")
     
-    -- الإطار
+    -- Main Frame (LARGER)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 350, 0, 200)
-    frame.Position = UDim2.new(0.5, -175, 0.5, -100)
+    frame.Size = UDim2.new(0, 500, 0, 300)  -- Bigger!
+    frame.Position = UDim2.new(0.5, -250, 0.5, -150)
     frame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.15)
     frame.BackgroundTransparency = 0.1
     frame.BorderSizePixel = 0
     frame.Parent = screenGui
     
-    -- زوايا مستديرة
+    -- Rounded corners
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
+    corner.CornerRadius = UDim.new(0, 12)
     corner.Parent = frame
     
-    -- عنوان
+    -- Title
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 30)
-    title.Position = UDim2.new(0, 0, 0, 10)
-    title.Text = "تحقق من أنك لست روبوتاً"
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.Position = UDim2.new(0, 0, 0, 15)
+    title.Text = "🔐 Verification"
     title.TextColor3 = Color3.new(1, 1, 1)
     title.TextScaled = true
     title.Font = Enum.Font.GothamBold
     title.BackgroundTransparency = 1
     title.Parent = frame
     
-    -- الرمز
+    -- Subtitle
+    local subtitle = Instance.new("TextLabel")
+    subtitle.Size = UDim2.new(1, 0, 0, 25)
+    subtitle.Position = UDim2.new(0, 0, 0, 55)
+    subtitle.Text = "Enter the code below to verify you're not a robot"
+    subtitle.TextColor3 = Color3.new(0.5, 0.5, 0.5)
+    subtitle.TextScaled = true
+    subtitle.Font = Enum.Font.Gotham
+    subtitle.BackgroundTransparency = 1
+    subtitle.Parent = frame
+    
+    -- Code display box (LARGER)
     local codeLabel = Instance.new("TextLabel")
-    codeLabel.Size = UDim2.new(0.8, 0, 0, 50)
-    codeLabel.Position = UDim2.new(0.1, 0, 0, 45)
+    codeLabel.Size = UDim2.new(0.7, 0, 0, 60)
+    codeLabel.Position = UDim2.new(0.15, 0, 0, 90)
     codeLabel.Text = ""
     codeLabel.TextColor3 = Color3.new(0.3, 0.8, 1)
     codeLabel.TextScaled = true
@@ -58,14 +69,25 @@ local function createGUI()
     codeLabel.Parent = frame
     
     local codeCorner = Instance.new("UICorner")
-    codeCorner.CornerRadius = UDim.new(0, 6)
+    codeCorner.CornerRadius = UDim.new(0, 8)
     codeCorner.Parent = codeLabel
     
-    -- مربع الإدخال
+    -- Input label
+    local inputLabel = Instance.new("TextLabel")
+    inputLabel.Size = UDim2.new(1, 0, 0, 20)
+    inputLabel.Position = UDim2.new(0, 0, 0, 160)
+    inputLabel.Text = "✏️ Type the code:"
+    inputLabel.TextColor3 = Color3.new(0.7, 0.7, 0.7)
+    inputLabel.TextScaled = true
+    inputLabel.Font = Enum.Font.Gotham
+    inputLabel.BackgroundTransparency = 1
+    inputLabel.Parent = frame
+    
+    -- TextBox (LARGER)
     local textBox = Instance.new("TextBox")
-    textBox.Size = UDim2.new(0.8, 0, 0, 35)
-    textBox.Position = UDim2.new(0.1, 0, 0, 105)
-    textBox.PlaceholderText = "أدخل الرمز..."
+    textBox.Size = UDim2.new(0.7, 0, 0, 40)
+    textBox.Position = UDim2.new(0.15, 0, 0, 185)
+    textBox.PlaceholderText = "Enter the code here..."
     textBox.Text = ""
     textBox.TextColor3 = Color3.new(1, 1, 1)
     textBox.BackgroundColor3 = Color3.new(0.15, 0.15, 0.2)
@@ -74,14 +96,14 @@ local function createGUI()
     textBox.Parent = frame
     
     local boxCorner = Instance.new("UICorner")
-    boxCorner.CornerRadius = UDim.new(0, 6)
+    boxCorner.CornerRadius = UDim.new(0, 8)
     boxCorner.Parent = textBox
     
-    -- زر التحقق
+    -- Submit Button (LARGER)
     local submitBtn = Instance.new("TextButton")
-    submitBtn.Size = UDim2.new(0.4, 0, 0, 35)
-    submitBtn.Position = UDim2.new(0.3, 0, 0, 150)
-    submitBtn.Text = "تحقق"
+    submitBtn.Size = UDim2.new(0.35, 0, 0, 40)
+    submitBtn.Position = UDim2.new(0.325, 0, 0, 235)
+    submitBtn.Text = "✅ Verify"
     submitBtn.TextColor3 = Color3.new(1, 1, 1)
     submitBtn.BackgroundColor3 = Color3.new(0.2, 0.6, 1)
     submitBtn.Font = Enum.Font.GothamBold
@@ -89,13 +111,13 @@ local function createGUI()
     submitBtn.Parent = frame
     
     local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = submitBtn
     
-    -- رسالة النتيجة
+    -- Result message
     local resultLabel = Instance.new("TextLabel")
-    resultLabel.Size = UDim2.new(1, 0, 0, 25)
-    resultLabel.Position = UDim2.new(0, 0, 0, 175)
+    resultLabel.Size = UDim2.new(1, 0, 0, 30)
+    resultLabel.Position = UDim2.new(0, 0, 0, 270)
     resultLabel.Text = ""
     resultLabel.TextColor3 = Color3.new(1, 1, 1)
     resultLabel.TextScaled = true
@@ -112,14 +134,14 @@ local function createGUI()
     }
 end
 
--- إنشاء الواجهة
+-- Create GUI
 local gui = createGUI()
 
--- توليد الرمز
+-- Generate code
 local currentCode = generateCode()
 gui.CodeLabel.Text = currentCode
 
--- تعطيل الحركة
+-- Disable movement
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:FindFirstChild("Humanoid")
 if humanoid then
@@ -127,14 +149,14 @@ if humanoid then
     humanoid.JumpPower = 0
 end
 
--- التحقق
+-- Verify function
 local function verify()
     local userInput = gui.TextBox.Text
     userInput = string.upper(userInput)
     
     if userInput == currentCode then
-        -- نجاح
-        gui.ResultLabel.Text = "تم التحقق بنجاح!"
+        -- Success
+        gui.ResultLabel.Text = "✅ Verification successful!"
         gui.ResultLabel.TextColor3 = Color3.new(0, 1, 0)
         
         if humanoid then
@@ -144,42 +166,55 @@ local function verify()
         
         task.wait(1)
         gui.ScreenGui:Destroy()
+        print("✅ Player verified: " .. player.Name)
         
     else
-        -- فشل - طرد فوري
-        gui.ResultLabel.Text = "رمز خاطئ! يتم طردك..."
+        -- Failed - Instant kick
+        gui.ResultLabel.Text = "❌ Wrong code! You will be kicked..."
         gui.ResultLabel.TextColor3 = Color3.new(1, 0, 0)
         gui.SubmitBtn.Visible = false
         gui.TextBox.Visible = false
         
         task.wait(1.5)
-        player:Kick("رمز تحقق خاطئ!")
+        print("❌ Wrong code! Kicking player: " .. player.Name)
+        player:Kick("❌ Incorrect verification code!")
     end
 end
 
--- أحداث
+-- Events
 gui.SubmitBtn.MouseButton1Click:Connect(verify)
+
 gui.TextBox.FocusLost:Connect(function(enterPressed)
     if enterPressed then
         verify()
     end
 end)
 
--- مؤقت 60 ثانية
+-- Timer: 60 seconds
 local timeLeft = 60
 task.spawn(function()
     while timeLeft > 0 do
         task.wait(1)
         timeLeft = timeLeft - 1
         
+        if timeLeft <= 10 then
+            gui.ResultLabel.Text = "⏰ " .. timeLeft .. " seconds remaining!"
+            gui.ResultLabel.TextColor3 = Color3.new(1, 0.8, 0)
+        end
+        
         if timeLeft <= 0 then
-            gui.ResultLabel.Text = "انتهى الوقت!"
+            gui.ResultLabel.Text = "⏰ Time is up!"
             task.wait(1)
-            player:Kick("انتهى وقت التحقق!")
+            print("⏰ Time expired! Kicking player: " .. player.Name)
+            player:Kick("⏰ Verification time expired!")
         end
     end
 end)
 
--- إشعار
-print("نظام التحقق يعمل!")
-print("الرمز: " .. currentCode)
+-- Startup message
+print("========================================")
+print("🔐 Verification System Started!")
+print("📝 Current code: " .. currentCode)
+print("⏱️ You have 60 seconds")
+print("⚠️ Wrong code = Instant kick!")
+print("========================================")
