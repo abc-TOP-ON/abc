@@ -1,342 +1,689 @@
 --[[
-    سكربت التحقق من أن اللاعب ليس روبوت
-    يدعم: تحدي اختيار الأرقام، تحدي الكتابة، تحدي النقر
+    Advanced Human Verification System
+    Supports: Random Code Generation with Multiple Types
+    Features: Numbers Only, Letters Only, Alphanumeric, Symbols, Pronounceable, Segmented, Hex, No Similar Chars
 --]]
 
 local player = game.Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- ========== إنشاء واجهة التحقق ==========
-local function createVerificationUI()
+-- ==========================================
+-- ====== RANDOM CODE GENERATOR ======
+-- ==========================================
+
+local CodeGenerator = {}
+
+-- ===== 1. Generate Random Code (Basic) =====
+function CodeGenerator.generateRandomCode(length, options)
+    options = options or {}
+    local useNumbers = options.numbers ~= false
+    local useUppercase = options.uppercase ~= false
+    local useLowercase = options.lowercase or false
+    local useSymbols = options.symbols or false
+    local excludeSimilar = options.excludeSimilar or false
+    local readable = options.readable or false
+    
+    local chars = ""
+    
+    if useNumbers then
+        chars = chars .. "0123456789"
+    end
+    
+    if useUppercase then
+        chars = chars .. "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    end
+    
+    if useLowercase then
+        chars = chars .. "abcdefghijklmnopqrstuvwxyz"
+    end
+    
+    if useSymbols then
+        chars = chars .. "!@#$%^&*()_+-=[]{}|;:,.<>?"
+    end
+    
+    if excludeSimilar then
+        chars = chars:gsub("[0Oo1IiLl]", "")
+    end
+    
+    if readable then
+        chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    end
+    
+    if chars == "" then
+        chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    end
+    
+    local code = ""
+    for i = 1, length do
+        local randomIndex = math.random(1, #chars)
+        code = code .. string.sub(chars, randomIndex, randomIndex)
+    end
+    
+    return code
+end
+
+-- ===== 2. Generate UUID Style Code =====
+function CodeGenerator.generateUUID()
+    local template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+    
+    local function randomHex()
+        return string.format("%x", math.random(0, 15))
+    end
+    
+    local uuid = string.gsub(template, "[xy]", function(c)
+        local r = math.random(0, 15)
+        if c == "x" then
+            return string.format("%x", r)
+        else
+            return string.format("%x", math.random(8, 11))
+        end
+    end)
+    
+    return string.upper(uuid)
+end
+
+-- ===== 3. Generate Strong Password =====
+function CodeGenerator.generatePassword(length)
+    local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()"
+    local password = ""
+    
+    local hasUpper = false
+    local hasLower = false
+    local hasNumber = false
+    local hasSymbol = false
+    
+    while not (hasUpper and hasLower and hasNumber and hasSymbol) do
+        password = ""
+        hasUpper = false
+        hasLower = false
+        hasNumber = false
+        hasSymbol = false
+        
+        for i = 1, length do
+            local randomIndex = math.random(1, #chars)
+            local char = string.sub(chars, randomIndex, randomIndex)
+            password = password .. char
+            
+            if string.match(char, "%u") then hasUpper = true end
+            if string.match(char, "%l") then hasLower = true end
+            if string.match(char, "%d") then hasNumber = true end
+            if string.match(char, "[%p]") then hasSymbol = true end
+        end
+    end
+    
+    return password
+end
+
+-- ===== 4. Generate Pronounceable Code =====
+function CodeGenerator.generatePronounceable(length)
+    local vowels = "AEIOU"
+    local consonants = "BCDFGHJKLMNPQRSTVWXYZ"
+    local code = ""
+    
+    for i = 1, length do
+        if i % 2 == 1 then
+            local idx = math.random(1, #consonants)
+            code = code .. string.sub(consonants, idx, idx)
+        else
+            local idx = math.random(1, #vowels)
+            code = code .. string.sub(vowels, idx, idx)
+        end
+    end
+    
+    return code
+end
+
+-- ===== 5. Generate Numeric Only Code =====
+function CodeGenerator.generateNumeric(length)
+    local code = ""
+    for i = 1, length do
+        code = code .. math.random(0, 9)
+    end
+    return code
+end
+
+-- ===== 6. Generate Hexadecimal Code =====
+function CodeGenerator.generateHex(length)
+    local chars = "0123456789ABCDEF"
+    local code = ""
+    for i = 1, length do
+        local idx = math.random(1, #chars)
+        code = code .. string.sub(chars, idx, idx)
+    end
+    return code
+end
+
+-- ===== 7. Generate Segmented Code (e.g., X7K-LM4-P2D) =====
+function CodeGenerator.generateSegmentedCode(parts, partLength)
+    parts = parts or 3
+    partLength = partLength or 4
+    local segments = {}
+    
+    for i = 1, parts do
+        local segment = CodeGenerator.generateRandomCode(partLength, {
+            numbers = true,
+            uppercase = true,
+            lowercase = false,
+            excludeSimilar = true
+        })
+        table.insert(segments, segment)
+    end
+    
+    return table.concat(segments, "-")
+end
+
+-- ==========================================
+-- ====== ADVANCED VERIFICATION UI ======
+-- ==========================================
+
+local function createAdvancedVerificationUI()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "VerificationGUI"
     screenGui.Parent = playerGui
     screenGui.ResetOnSpawn = false
 
-    -- الخلفية المظللة
+    -- Background Overlay
     local overlay = Instance.new("Frame")
     overlay.Name = "Overlay"
     overlay.Parent = screenGui
     overlay.Size = UDim2.new(1, 0, 1, 0)
     overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    overlay.BackgroundTransparency = 0.6
+    overlay.BackgroundTransparency = 0.75
     overlay.BorderSizePixel = 0
 
-    -- نافذة التحقق
+    -- Main Frame
     local frame = Instance.new("Frame")
     frame.Name = "MainFrame"
     frame.Parent = overlay
-    frame.Size = UDim2.new(0, 400, 0, 350)
-    frame.Position = UDim2.new(0.5, -200, 0.5, -175)
-    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    frame.Size = UDim2.new(0, 480, 0, 450)
+    frame.Position = UDim2.new(0.5, -240, 0.5, -225)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 22, 35)
     frame.BorderSizePixel = 0
     frame.ClipsDescendants = true
 
-    -- زوايا دائرية
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
+    corner.CornerRadius = UDim.new(0, 18)
     corner.Parent = frame
 
-    -- العنوان
+    -- Title Bar
+    local titleBar = Instance.new("Frame")
+    titleBar.Parent = frame
+    titleBar.Size = UDim2.new(1, 0, 0, 55)
+    titleBar.BackgroundColor3 = Color3.fromRGB(40, 45, 80)
+    titleBar.BorderSizePixel = 0
+    
+    local titleBarCorner = Instance.new("UICorner")
+    titleBarCorner.CornerRadius = UDim.new(0, 18)
+    titleBarCorner.Parent = titleBar
+
+    -- Title
     local title = Instance.new("TextLabel")
-    title.Parent = frame
-    title.Size = UDim2.new(1, 0, 0, 50)
-    title.Position = UDim2.new(0, 0, 0, 0)
-    title.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-    title.Text = "🔐 تحقق بشري"
+    title.Parent = titleBar
+    title.Size = UDim2.new(1, 0, 1, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "🔐 Security Verification"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.TextScaled = true
     title.Font = Enum.Font.GothamBold
 
-    -- أيقونة القفل
+    -- Animated Icon
     local icon = Instance.new("TextLabel")
     icon.Parent = frame
-    icon.Size = UDim2.new(0, 60, 0, 60)
-    icon.Position = UDim2.new(0.5, -30, 0, 60)
+    icon.Size = UDim2.new(0, 70, 0, 70)
+    icon.Position = UDim2.new(0.5, -35, 0, 70)
     icon.BackgroundTransparency = 1
     icon.Text = "🤖"
-    icon.TextSize = 40
+    icon.TextSize = 45
     icon.TextColor3 = Color3.fromRGB(255, 200, 0)
 
-    -- نص التعليمات
+    -- Code Display Container
+    local codeContainer = Instance.new("Frame")
+    codeContainer.Parent = frame
+    codeContainer.Size = UDim2.new(0.8, 0, 0, 70)
+    codeContainer.Position = UDim2.new(0.1, 0, 0, 150)
+    codeContainer.BackgroundColor3 = Color3.fromRGB(30, 35, 55)
+    codeContainer.BorderSizePixel = 2
+    codeContainer.BorderColor3 = Color3.fromRGB(0, 200, 255)
+
+    local codeContainerCorner = Instance.new("UICorner")
+    codeContainerCorner.CornerRadius = UDim.new(0, 12)
+    codeContainerCorner.Parent = codeContainer
+
+    -- Code Display
+    local codeDisplay = Instance.new("TextLabel")
+    codeDisplay.Parent = codeContainer
+    codeDisplay.Size = UDim2.new(1, 0, 1, 0)
+    codeDisplay.BackgroundTransparency = 1
+    codeDisplay.Text = "----"
+    codeDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
+    codeDisplay.TextSize = 40
+    codeDisplay.Font = Enum.Font.GothamBold
+    codeDisplay.TextScaled = true
+
+    -- Code Type Label
+    local codeTypeLabel = Instance.new("TextLabel")
+    codeTypeLabel.Parent = frame
+    codeTypeLabel.Size = UDim2.new(0.8, 0, 0, 25)
+    codeTypeLabel.Position = UDim2.new(0.1, 0, 0, 225)
+    codeTypeLabel.BackgroundTransparency = 1
+    codeTypeLabel.Text = "🔑 Verification Code (Alphanumeric)"
+    codeTypeLabel.TextColor3 = Color3.fromRGB(150, 160, 200)
+    codeTypeLabel.TextSize = 14
+    codeTypeLabel.Font = Enum.Font.Gotham
+    codeTypeLabel.TextXAlignment = Enum.TextXAlignment.Center
+
+    -- Instruction Label
     local instruction = Instance.new("TextLabel")
     instruction.Parent = frame
-    instruction.Size = UDim2.new(0.9, 0, 0, 50)
-    instruction.Position = UDim2.new(0.05, 0, 0, 120)
+    instruction.Size = UDim2.new(0.9, 0, 0, 30)
+    instruction.Position = UDim2.new(0.05, 0, 0, 255)
     instruction.BackgroundTransparency = 1
-    instruction.Text = "إثبت أنك لست روبوتاً\nاختر الرقم الصحيح"
-    instruction.TextColor3 = Color3.fromRGB(200, 200, 200)
-    instruction.TextScaled = true
-    instruction.TextWrapped = true
+    instruction.Text = "✍️ Enter the code shown in the box"
+    instruction.TextColor3 = Color3.fromRGB(200, 200, 220)
+    instruction.TextSize = 17
+    instruction.Font = Enum.Font.Gotham
     instruction.TextXAlignment = Enum.TextXAlignment.Center
 
-    return screenGui, frame, instruction
-end
+    -- Input Box
+    local inputBox = Instance.new("TextBox")
+    inputBox.Parent = frame
+    inputBox.Size = UDim2.new(0.7, 0, 0, 50)
+    inputBox.Position = UDim2.new(0.15, 0, 0, 295)
+    inputBox.BackgroundColor3 = Color3.fromRGB(35, 38, 60)
+    inputBox.Text = ""
+    inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    inputBox.TextSize = 30
+    inputBox.PlaceholderText = "Enter code here..."
+    inputBox.PlaceholderColor3 = Color3.fromRGB(100, 110, 150)
+    inputBox.Font = Enum.Font.GothamBold
+    inputBox.ClearTextOnFocus = false
+    inputBox.TextXAlignment = Enum.TextXAlignment.Center
 
--- ========== الطريقة الأولى: تحدي اختيار الرقم ==========
-local function numberChallenge()
-    local screenGui, frame, instruction = createVerificationUI()
+    local inputCorner = Instance.new("UICorner")
+    inputCorner.CornerRadius = UDim.new(0, 10)
+    inputCorner.Parent = inputBox
     
-    -- إنشاء الأرقام العشوائية
-    local correctNumber = math.random(1, 9)
-    local numbers = {}
-    local usedNumbers = {}
-    
-    -- توليد 4 أرقام عشوائية مختلفة
-    for i = 1, 4 do
-        local num
-        repeat
-            num = math.random(1, 9)
-        until not table.find(usedNumbers, num)
-        table.insert(usedNumbers, num)
-        table.insert(numbers, num)
-    end
-    
-    -- التأكد من وجود الرقم الصحيح
-    if not table.find(numbers, correctNumber) then
-        numbers[math.random(1, #numbers)] = correctNumber
-    end
-    
-    -- خلط الأرقام
-    for i = #numbers, 2, -1 do
-        local j = math.random(1, i)
-        numbers[i], numbers[j] = numbers[j], numbers[i]
-    end
-    
-    -- عرض التعليمات مع الرقم الصحيح
-    instruction.Text = "🔢 اختر الرقم: " .. correctNumber
-    
-    -- إنشاء أزرار الأرقام
-    local buttonSize = 60
-    local spacing = 20
-    local startX = (400 - (buttonSize * 4 + spacing * 3)) / 2
-    
-    for i, num in ipairs(numbers) do
-        local btn = Instance.new("TextButton")
-        btn.Parent = frame
-        btn.Size = UDim2.new(0, buttonSize, 0, buttonSize)
-        btn.Position = UDim2.new(0, startX + (i - 1) * (buttonSize + spacing), 0, 200)
-        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-        btn.Text = tostring(num)
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.TextSize = 28
-        btn.Font = Enum.Font.GothamBold
-        
-        local cornerBtn = Instance.new("UICorner")
-        cornerBtn.CornerRadius = UDim.new(0, 8)
-        cornerBtn.Parent = btn
-        
-        btn.MouseButton1Click:Connect(function()
-            local selected = tonumber(btn.Text)
-            if selected == correctNumber then
-                -- ✅ نجاح
-                btn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-                instruction.Text = "✅ تم التحقق بنجاح!"
-                instruction.TextColor3 = Color3.fromRGB(0, 255, 0)
-                
-                -- إخفاء الواجهة بعد ثانية
-                task.wait(0.8)
-                screenGui:Destroy()
-                
-                -- تشغيل إشعار نجاح
-                print("✅ تم التحقق البشري بنجاح!")
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "✅ تحقق ناجح",
-                    Text = "تم التأكد من أنك لست روبوتاً!",
-                    Duration = 3
-                })
-            else
-                -- ❌ فشل
-                btn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-                instruction.Text = "❌ رقم خاطئ! حاول مجدداً"
-                instruction.TextColor3 = Color3.fromRGB(255, 0, 0)
-                
-                -- إعادة تعيين الزر بعد ثانية
-                task.wait(0.5)
-                btn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-                instruction.Text = "🔢 اختر الرقم: " .. correctNumber
-                instruction.TextColor3 = Color3.fromRGB(200, 200, 200)
-            end
-        end)
-    end
-    
-    -- زر إعادة المحاولة
-    local retryBtn = Instance.new("TextButton")
-    retryBtn.Parent = frame
-    retryBtn.Size = UDim2.new(0.6, 0, 0, 40)
-    retryBtn.Position = UDim2.new(0.2, 0, 1, -55)
-    retryBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
-    retryBtn.Text = "🔄 إعادة المحاولة"
-    retryBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    retryBtn.TextScaled = true
-    
-    local cornerRetry = Instance.new("UICorner")
-    cornerRetry.CornerRadius = UDim.new(0, 8)
-    cornerRetry.Parent = retryBtn
-    
-    retryBtn.MouseButton1Click:Connect(function()
-        frame:Destroy()
-        screenGui:Destroy()
-        numberChallenge() -- إعادة تشغيل التحدي
+    -- Auto uppercase
+    inputBox:GetPropertyChangedSignal("Text"):Connect(function()
+        inputBox.Text = string.upper(inputBox.Text)
     end)
-end
 
--- ========== الطريقة الثانية: تحدي الكتابة (Captcha) ==========
-local function textChallenge()
-    local screenGui, frame, instruction = createVerificationUI()
-    
-    -- كلمات عشوائية للتحقق
-    local words = {"سلام", "روبوت", "إنسان", "تحقق", "أمان", "مستخدم", "مرحبا", "عالم"}
-    local selectedWord = words[math.random(1, #words)]
-    
-    instruction.Text = "✍️ اكتب الكلمة التالية:\n" .. selectedWord
-    
-    -- حقل الإدخال
-    local textBox = Instance.new("TextBox")
-    textBox.Parent = frame
-    textBox.Size = UDim2.new(0.6, 0, 0, 50)
-    textBox.Position = UDim2.new(0.2, 0, 0, 200)
-    textBox.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-    textBox.Text = ""
-    textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textBox.TextSize = 24
-    textBox.PlaceholderText = "اكتب هنا..."
-    textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-    textBox.Font = Enum.Font.Gotham
-    textBox.ClearTextOnFocus = false
-    
-    local cornerBox = Instance.new("UICorner")
-    cornerBox.CornerRadius = UDim.new(0, 8)
-    cornerBox.Parent = textBox
-    
-    -- زر التأكيد
+    -- Buttons
+    -- Confirm Button
     local confirmBtn = Instance.new("TextButton")
     confirmBtn.Parent = frame
-    confirmBtn.Size = UDim2.new(0.4, 0, 0, 40)
-    confirmBtn.Position = UDim2.new(0.3, 0, 0, 270)
-    confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
-    confirmBtn.Text = "✅ تأكيد"
+    confirmBtn.Size = UDim2.new(0.28, 0, 0, 45)
+    confirmBtn.Position = UDim2.new(0.1, 0, 0, 360)
+    confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
+    confirmBtn.Text = "✅ Confirm"
     confirmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     confirmBtn.TextScaled = true
+    confirmBtn.Font = Enum.Font.GothamBold
+
+    local confirmCorner = Instance.new("UICorner")
+    confirmCorner.CornerRadius = UDim.new(0, 10)
+    confirmCorner.Parent = confirmBtn
+
+    -- Refresh Button
+    local refreshBtn = Instance.new("TextButton")
+    refreshBtn.Parent = frame
+    refreshBtn.Size = UDim2.new(0.28, 0, 0, 45)
+    refreshBtn.Position = UDim2.new(0.39, 0, 0, 360)
+    refreshBtn.BackgroundColor3 = Color3.fromRGB(60, 65, 100)
+    refreshBtn.Text = "🔄 Refresh"
+    refreshBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    refreshBtn.TextScaled = true
+    refreshBtn.Font = Enum.Font.GothamBold
+
+    local refreshCorner = Instance.new("UICorner")
+    refreshCorner.CornerRadius = UDim.new(0, 10)
+    refreshCorner.Parent = refreshBtn
+
+    -- Change Type Button
+    local changeTypeBtn = Instance.new("TextButton")
+    changeTypeBtn.Parent = frame
+    changeTypeBtn.Size = UDim2.new(0.28, 0, 0, 45)
+    changeTypeBtn.Position = UDim2.new(0.68, 0, 0, 360)
+    changeTypeBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 150)
+    changeTypeBtn.Text = "🎲 Change Type"
+    changeTypeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    changeTypeBtn.TextScaled = true
+    changeTypeBtn.Font = Enum.Font.GothamBold
+
+    local changeTypeCorner = Instance.new("UICorner")
+    changeTypeCorner.CornerRadius = UDim.new(0, 10)
+    changeTypeCorner.Parent = changeTypeBtn
+
+    -- Strength Indicator
+    local strengthBar = Instance.new("Frame")
+    strengthBar.Parent = frame
+    strengthBar.Size = UDim2.new(0.7, 0, 0, 8)
+    strengthBar.Position = UDim2.new(0.15, 0, 0, 420)
+    strengthBar.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+    strengthBar.BorderSizePixel = 0
     
-    local cornerConfirm = Instance.new("UICorner")
-    cornerConfirm.CornerRadius = UDim.new(0, 8)
-    cornerConfirm.Parent = confirmBtn
+    local strengthBarCorner = Instance.new("UICorner")
+    strengthBarCorner.CornerRadius = UDim.new(0, 4)
+    strengthBarCorner.Parent = strengthBar
+
+    local strengthFill = Instance.new("Frame")
+    strengthFill.Parent = strengthBar
+    strengthFill.Size = UDim2.new(1, 0, 1, 0)
+    strengthFill.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+    strengthFill.BorderSizePixel = 0
     
-    confirmBtn.MouseButton1Click:Connect(function()
-        if textBox.Text == selectedWord then
-            instruction.Text = "✅ تم التحقق بنجاح!"
-            instruction.TextColor3 = Color3.fromRGB(0, 255, 0)
-            textBox.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-            task.wait(0.8)
-            screenGui:Destroy()
-            
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "✅ تحقق ناجح",
-                Text = "تم التأكد من أنك لست روبوتاً!",
-                Duration = 3
-            })
+    local strengthFillCorner = Instance.new("UICorner")
+    strengthFillCorner.CornerRadius = UDim.new(0, 4)
+    strengthFillCorner.Parent = strengthFill
+
+    local strengthLabel = Instance.new("TextLabel")
+    strengthLabel.Parent = frame
+    strengthLabel.Size = UDim2.new(0.7, 0, 0, 20)
+    strengthLabel.Position = UDim2.new(0.15, 0, 0, 430)
+    strengthLabel.BackgroundTransparency = 1
+    strengthLabel.Text = "🔒 Strong"
+    strengthLabel.TextColor3 = Color3.fromRGB(150, 200, 150)
+    strengthLabel.TextSize = 12
+    strengthLabel.Font = Enum.Font.Gotham
+    strengthLabel.TextXAlignment = Enum.TextXAlignment.Center
+
+    return screenGui, frame, codeDisplay, codeTypeLabel, inputBox, confirmBtn, refreshBtn, changeTypeBtn, instruction, strengthFill, strengthLabel
+end
+
+-- ==========================================
+-- ====== MAIN VERIFICATION SYSTEM ======
+-- ==========================================
+
+local function startAdvancedVerification()
+    local screenGui, frame, codeDisplay, codeTypeLabel, inputBox, confirmBtn, refreshBtn, changeTypeBtn, instruction, strengthFill, strengthLabel = createAdvancedVerificationUI()
+    
+    -- ===== Available Code Types =====
+    local codeTypes = {
+        {
+            name = "🔢 Numbers Only",
+            generator = function() return CodeGenerator.generateNumeric(6) end,
+            strength = 0.4,
+            strengthText = "🟡 Medium"
+        },
+        {
+            name = "🔤 Letters Only",
+            generator = function() return CodeGenerator.generateRandomCode(6, {numbers = false, uppercase = true}) end,
+            strength = 0.5,
+            strengthText = "🟡 Medium"
+        },
+        {
+            name = "🔑 Alphanumeric",
+            generator = function() return CodeGenerator.generateRandomCode(6, {numbers = true, uppercase = true}) end,
+            strength = 0.7,
+            strengthText = "🟢 Strong"
+        },
+        {
+            name = "🔐 Alphanumeric + Symbols",
+            generator = function() return CodeGenerator.generateRandomCode(6, {numbers = true, uppercase = true, symbols = true}) end,
+            strength = 1.0,
+            strengthText = "🟣 Very Strong"
+        },
+        {
+            name = "🗣️ Pronounceable",
+            generator = function() return CodeGenerator.generatePronounceable(6) end,
+            strength = 0.5,
+            strengthText = "🟡 Medium"
+        },
+        {
+            name = "📦 Segmented (X7K-LM4)",
+            generator = function() return CodeGenerator.generateSegmentedCode(2, 4) end,
+            strength = 0.8,
+            strengthText = "🟢 Strong"
+        },
+        {
+            name = "🔢 Hexadecimal",
+            generator = function() return CodeGenerator.generateHex(6) end,
+            strength = 0.6,
+            strengthText = "🟢 Good"
+        },
+        {
+            name = "🎯 No Similar Chars",
+            generator = function() return CodeGenerator.generateRandomCode(6, {numbers = true, uppercase = true, excludeSimilar = true}) end,
+            strength = 0.75,
+            strengthText = "🟢 Strong"
+        }
+    }
+    
+    -- ===== Variables =====
+    local currentTypeIndex = 3
+    local currentCode = ""
+    local attempts = 0
+    local maxAttempts = 4
+    local codeLength = 6
+    
+    -- ===== Update Strength Indicator =====
+    local function updateStrength(strengthValue, text)
+        strengthFill.Size = UDim2.new(strengthValue, 0, 1, 0)
+        
+        if strengthValue >= 0.7 then
+            strengthFill.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+            strengthLabel.Text = "🔒 " .. text
+            strengthLabel.TextColor3 = Color3.fromRGB(150, 255, 150)
+        elseif strengthValue >= 0.4 then
+            strengthFill.BackgroundColor3 = Color3.fromRGB(255, 200, 0)
+            strengthLabel.Text = "🔓 " .. text
+            strengthLabel.TextColor3 = Color3.fromRGB(255, 220, 100)
         else
-            instruction.Text = "❌ كلمة خاطئة! حاول مجدداً"
-            instruction.TextColor3 = Color3.fromRGB(255, 0, 0)
-            textBox.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+            strengthFill.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+            strengthLabel.Text = "⚠️ " .. text
+            strengthLabel.TextColor3 = Color3.fromRGB(255, 150, 150)
+        end
+    end
+    
+    -- ===== Generate New Code =====
+    local function generateNewCode()
+        local typeData = codeTypes[currentTypeIndex]
+        currentCode = typeData.generator()
+        
+        codeDisplay.Text = currentCode
+        codeTypeLabel.Text = "🔑 " .. typeData.name
+        
+        updateStrength(typeData.strength, typeData.strengthText)
+        
+        -- Flash effect
+        codeDisplay.TextColor3 = Color3.fromRGB(255, 255, 0)
+        task.wait(0.15)
+        codeDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
+        
+        inputBox.Text = ""
+        inputBox.BackgroundColor3 = Color3.fromRGB(35, 38, 60)
+        instruction.Text = "✍️ Enter the code shown in the box"
+        instruction.TextColor3 = Color3.fromRGB(200, 200, 220)
+        
+        print("🔑 New Code (" .. typeData.name .. "): " .. currentCode)
+    end
+    
+    -- ===== Change Code Type =====
+    local function changeCodeType()
+        currentTypeIndex = currentTypeIndex + 1
+        if currentTypeIndex > #codeTypes then
+            currentTypeIndex = 1
+        end
+        
+        generateNewCode()
+        attempts = 0
+        
+        instruction.Text = "🔄 Code type changed! Enter the new code"
+        instruction.TextColor3 = Color3.fromRGB(0, 200, 255)
+        
+        -- Button flash effect
+        changeTypeBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 200)
+        task.wait(0.2)
+        changeTypeBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 150)
+    end
+    
+    -- ===== Verify Code =====
+    local function verifyCode()
+        local userInput = inputBox.Text
+        
+        if userInput == "" then
+            instruction.Text = "⚠️ Please enter the code first!"
+            instruction.TextColor3 = Color3.fromRGB(255, 200, 0)
+            inputBox.BackgroundColor3 = Color3.fromRGB(200, 150, 0)
             task.wait(0.5)
-            textBox.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-            instruction.Text = "✍️ اكتب الكلمة التالية:\n" .. selectedWord
-            instruction.TextColor3 = Color3.fromRGB(200, 200, 200)
-            textBox.Text = ""
+            inputBox.BackgroundColor3 = Color3.fromRGB(35, 38, 60)
+            instruction.Text = "✍️ Enter the code shown in the box"
+            instruction.TextColor3 = Color3.fromRGB(200, 200, 220)
+            return
         end
-    end)
-    
-    -- السماح بالضغط على Enter
-    textBox.FocusLost:Connect(function(enterPressed)
-        if enterPressed then
-            confirmBtn.MouseButton1Click:Fire()
-        end
-    end)
-end
-
--- ========== الطريقة الثالثة: تحدي النقر السريع ==========
-local function clickChallenge()
-    local screenGui, frame, instruction = createVerificationUI()
-    
-    local clicksNeeded = 10
-    local clicksDone = 0
-    
-    instruction.Text = "🖱️ انقر على الزر " .. clicksNeeded .. " مرة\nلتأكيد أنك إنسان"
-    
-    -- زر النقر
-    local clickBtn = Instance.new("TextButton")
-    clickBtn.Parent = frame
-    clickBtn.Size = UDim2.new(0.5, 0, 0, 80)
-    clickBtn.Position = UDim2.new(0.25, 0, 0, 180)
-    clickBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
-    clickBtn.Text = "👆 انقر هنا"
-    clickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    clickBtn.TextSize = 24
-    clickBtn.Font = Enum.Font.GothamBold
-    
-    local cornerClick = Instance.new("UICorner")
-    cornerClick.CornerRadius = UDim.new(0, 12)
-    cornerClick.Parent = clickBtn
-    
-    -- عداد التقدم
-    local progress = Instance.new("TextLabel")
-    progress.Parent = frame
-    progress.Size = UDim2.new(0.8, 0, 0, 30)
-    progress.Position = UDim2.new(0.1, 0, 0, 280)
-    progress.BackgroundTransparency = 1
-    progress.Text = "0 / " .. clicksNeeded
-    progress.TextColor3 = Color3.fromRGB(200, 200, 200)
-    progress.TextSize = 20
-    progress.Font = Enum.Font.Gotham
-    
-    clickBtn.MouseButton1Click:Connect(function()
-        clicksDone = clicksDone + 1
-        progress.Text = clicksDone .. " / " .. clicksNeeded
         
-        -- تغيير لون الزر مؤقتاً
-        clickBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-        task.wait(0.1)
-        clickBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
+        -- Remove dashes for segmented codes
+        local cleanInput = string.gsub(userInput, "-", "")
+        local cleanCode = string.gsub(currentCode, "-", "")
         
-        if clicksDone >= clicksNeeded then
-            instruction.Text = "✅ تم التحقق بنجاح!"
+        if cleanInput == cleanCode then
+            -- ✅ Success
+            inputBox.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+            instruction.Text = "✅ Verification successful! You are human ✅"
             instruction.TextColor3 = Color3.fromRGB(0, 255, 0)
-            clickBtn.Text = "✅ تم!"
-            clickBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+            confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+            
+            print("✅ Verification Successful! Code: " .. currentCode)
+            
+            -- Success animation
+            for i = 1, 3 do
+                codeDisplay.TextColor3 = Color3.fromRGB(0, 255, 0)
+                task.wait(0.1)
+                codeDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
+                task.wait(0.1)
+            end
+            
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "✅ Verification Successful",
+                Text = "You have been verified as human! 🎉",
+                Duration = 3,
+                Icon = "rbxassetid://8739636080"
+            })
             
             task.wait(0.8)
             screenGui:Destroy()
             
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "✅ تحقق ناجح",
-                Text = "تم التأكد من أنك لست روبوتاً!",
-                Duration = 3
-            })
+            -- Run your code here after verification
+            
+        else
+            -- ❌ Failed
+            attempts = attempts + 1
+            local remaining = maxAttempts - attempts
+            
+            inputBox.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+            instruction.Text = "❌ Incorrect code! " .. remaining .. " attempts remaining"
+            instruction.TextColor3 = Color3.fromRGB(255, 0, 0)
+            
+            print("❌ Incorrect Code! Input: " .. userInput .. " | Correct: " .. currentCode)
+            
+            -- Shake animation
+            local originalPos = frame.Position
+            for i = 1, 5 do
+                frame.Position = UDim2.new(0.5, -240 + (i % 2 == 0 and 12 or -12), 0.5, -225)
+                task.wait(0.04)
+            end
+            frame.Position = originalPos
+            
+            task.wait(0.6)
+            inputBox.BackgroundColor3 = Color3.fromRGB(35, 38, 60)
+            
+            if attempts >= maxAttempts then
+                -- Max attempts reached
+                instruction.Text = "🔒 Max attempts reached! Changing code..."
+                instruction.TextColor3 = Color3.fromRGB(255, 100, 100)
+                confirmBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+                
+                task.wait(1.5)
+                changeCodeType()
+                attempts = 0
+                confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
+            else
+                instruction.Text = "✍️ Enter the code shown in the box"
+                instruction.TextColor3 = Color3.fromRGB(200, 200, 220)
+            end
+        end
+    end
+    
+    -- ===== Button Connections =====
+    confirmBtn.MouseButton1Click:Connect(verifyCode)
+    refreshBtn.MouseButton1Click:Connect(generateNewCode)
+    changeTypeBtn.MouseButton1Click:Connect(changeCodeType)
+    
+    -- ===== Enter Key =====
+    inputBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            verifyCode()
         end
     end)
+    
+    -- ===== Generate Initial Code =====
+    generateNewCode()
+    
+    -- ===== Draggable Window =====
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+    
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+        end
+    end)
+    
+    titleBar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    
+    return screenGui
 end
 
--- ========== اختيار نوع التحقق عشوائياً ==========
-local function startVerification()
-    local types = {numberChallenge, textChallenge, clickChallenge}
-    local selectedType = types[math.random(1, #types)]
-    selectedType()
-end
+-- ==========================================
+-- ====== START SCRIPT ======
+-- ==========================================
 
--- ========== تشغيل السكربت ==========
--- يمكنك تشغيل أي نوع تريده:
--- numberChallenge()   -- تحدي الأرقام
--- textChallenge()     -- تحدي الكتابة
--- clickChallenge()    -- تحدي النقر
--- startVerification() -- اختيار عشوائي
+-- Start the advanced verification
+startAdvancedVerification()
 
--- تشغيل التحقق عند دخول اللاعب
-startVerification()
+-- ==========================================
+-- ====== ADDITIONAL PROTECTIONS ======
+-- ==========================================
 
--- ========== حماية إضافية: كشف الحركات الآلية ==========
--- مراقبة النقرات السريعة جداً (قد تكون روبوت)
+-- Prevent Paste (Ctrl+V / Cmd+V)
+game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == Enum.KeyCode.V and 
+       (game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftControl) or
+        game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.RightControl) or
+        game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftCommand) or
+        game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.RightCommand)) then
+        
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "⚠️ Not Allowed",
+            Text = "Please type the code manually!",
+            Duration = 2
+        })
+        return
+    end
+end)
+
+-- Detect rapid clicks (bot behavior)
 local clickCount = 0
 local clickTimer = 0
 
@@ -346,19 +693,19 @@ game:GetService("UserInputService").InputBegan:Connect(function(input, gameProce
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         clickCount = clickCount + 1
         
-        -- إذا كان هناك أكثر من 30 نقرة خلال 5 ثواني
         if clickCount > 30 then
-            print("⚠️ نشاط مشبوه: نقرة سريعة جداً!")
+            print("⚠️ Suspicious Activity: Rapid clicks detected!")
             game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "⚠️ تحذير",
-                Text = "نشاط غير طبيعي تم اكتشافه!",
+                Title = "⚠️ Warning",
+                Text = "Suspicious activity detected!",
                 Duration = 3
             })
             clickCount = 0
         end
         
-        -- إعادة تعيين العداد كل 5 ثواني
         task.wait(5)
         clickCount = 0
     end
 end)
+
+print("✅ Verification System Loaded Successfully!")
