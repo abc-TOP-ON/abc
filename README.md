@@ -1,5 +1,5 @@
 --[[
-    Advanced Human Verification System
+    Advanced Human Verification System - Mobile Optimized
     Supports: Random Code Generation with Multiple Types
     Features: Numbers Only, Letters Only, Alphanumeric, Symbols, Pronounceable, Segmented, Hex, No Similar Chars
 --]]
@@ -173,14 +173,15 @@ function CodeGenerator.generateSegmentedCode(parts, partLength)
 end
 
 -- ==========================================
--- ====== ADVANCED VERIFICATION UI ======
+-- ====== MOBILE OPTIMIZED UI ======
 -- ==========================================
 
-local function createAdvancedVerificationUI()
+local function createMobileVerificationUI()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "VerificationGUI"
     screenGui.Parent = playerGui
     screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
     -- Background Overlay
     local overlay = Instance.new("Frame")
@@ -188,32 +189,32 @@ local function createAdvancedVerificationUI()
     overlay.Parent = screenGui
     overlay.Size = UDim2.new(1, 0, 1, 0)
     overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    overlay.BackgroundTransparency = 0.75
+    overlay.BackgroundTransparency = 0.7
     overlay.BorderSizePixel = 0
 
-    -- Main Frame
+    -- Main Frame - Smaller for Mobile
     local frame = Instance.new("Frame")
     frame.Name = "MainFrame"
     frame.Parent = overlay
-    frame.Size = UDim2.new(0, 480, 0, 450)
-    frame.Position = UDim2.new(0.5, -240, 0.5, -225)
+    frame.Size = UDim2.new(0, 350, 0, 420)
+    frame.Position = UDim2.new(0.5, -175, 0.5, -210)
     frame.BackgroundColor3 = Color3.fromRGB(20, 22, 35)
     frame.BorderSizePixel = 0
     frame.ClipsDescendants = true
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 18)
+    corner.CornerRadius = UDim.new(0, 16)
     corner.Parent = frame
 
-    -- Title Bar
+    -- Title Bar - Smaller
     local titleBar = Instance.new("Frame")
     titleBar.Parent = frame
-    titleBar.Size = UDim2.new(1, 0, 0, 55)
+    titleBar.Size = UDim2.new(1, 0, 0, 45)
     titleBar.BackgroundColor3 = Color3.fromRGB(40, 45, 80)
     titleBar.BorderSizePixel = 0
     
     local titleBarCorner = Instance.new("UICorner")
-    titleBarCorner.CornerRadius = UDim.new(0, 18)
+    titleBarCorner.CornerRadius = UDim.new(0, 16)
     titleBarCorner.Parent = titleBar
 
     -- Title
@@ -221,32 +222,32 @@ local function createAdvancedVerificationUI()
     title.Parent = titleBar
     title.Size = UDim2.new(1, 0, 1, 0)
     title.BackgroundTransparency = 1
-    title.Text = "🔐 Security Verification"
+    title.Text = "🔐 Verify"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.TextScaled = true
     title.Font = Enum.Font.GothamBold
 
-    -- Animated Icon
+    -- Small Icon
     local icon = Instance.new("TextLabel")
     icon.Parent = frame
-    icon.Size = UDim2.new(0, 70, 0, 70)
-    icon.Position = UDim2.new(0.5, -35, 0, 70)
+    icon.Size = UDim2.new(0, 50, 0, 50)
+    icon.Position = UDim2.new(0.5, -25, 0, 55)
     icon.BackgroundTransparency = 1
     icon.Text = "🤖"
-    icon.TextSize = 45
+    icon.TextSize = 35
     icon.TextColor3 = Color3.fromRGB(255, 200, 0)
 
-    -- Code Display Container
+    -- Code Display Container - Smaller
     local codeContainer = Instance.new("Frame")
     codeContainer.Parent = frame
-    codeContainer.Size = UDim2.new(0.8, 0, 0, 70)
-    codeContainer.Position = UDim2.new(0.1, 0, 0, 150)
+    codeContainer.Size = UDim2.new(0.85, 0, 0, 55)
+    codeContainer.Position = UDim2.new(0.075, 0, 0, 115)
     codeContainer.BackgroundColor3 = Color3.fromRGB(30, 35, 55)
     codeContainer.BorderSizePixel = 2
     codeContainer.BorderColor3 = Color3.fromRGB(0, 200, 255)
 
     local codeContainerCorner = Instance.new("UICorner")
-    codeContainerCorner.CornerRadius = UDim.new(0, 12)
+    codeContainerCorner.CornerRadius = UDim.new(0, 10)
     codeContainerCorner.Parent = codeContainer
 
     -- Code Display
@@ -256,48 +257,49 @@ local function createAdvancedVerificationUI()
     codeDisplay.BackgroundTransparency = 1
     codeDisplay.Text = "----"
     codeDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
-    codeDisplay.TextSize = 40
+    codeDisplay.TextSize = 32
     codeDisplay.Font = Enum.Font.GothamBold
     codeDisplay.TextScaled = true
 
-    -- Code Type Label
+    -- Code Type Label - Smaller
     local codeTypeLabel = Instance.new("TextLabel")
     codeTypeLabel.Parent = frame
-    codeTypeLabel.Size = UDim2.new(0.8, 0, 0, 25)
-    codeTypeLabel.Position = UDim2.new(0.1, 0, 0, 225)
+    codeTypeLabel.Size = UDim2.new(0.85, 0, 0, 20)
+    codeTypeLabel.Position = UDim2.new(0.075, 0, 0, 175)
     codeTypeLabel.BackgroundTransparency = 1
-    codeTypeLabel.Text = "🔑 Verification Code (Alphanumeric)"
+    codeTypeLabel.Text = "🔑 Alphanumeric"
     codeTypeLabel.TextColor3 = Color3.fromRGB(150, 160, 200)
-    codeTypeLabel.TextSize = 14
+    codeTypeLabel.TextSize = 12
     codeTypeLabel.Font = Enum.Font.Gotham
     codeTypeLabel.TextXAlignment = Enum.TextXAlignment.Center
 
-    -- Instruction Label
+    -- Instruction Label - Smaller
     local instruction = Instance.new("TextLabel")
     instruction.Parent = frame
-    instruction.Size = UDim2.new(0.9, 0, 0, 30)
-    instruction.Position = UDim2.new(0.05, 0, 0, 255)
+    instruction.Size = UDim2.new(0.9, 0, 0, 25)
+    instruction.Position = UDim2.new(0.05, 0, 0, 200)
     instruction.BackgroundTransparency = 1
-    instruction.Text = "✍️ Enter the code shown in the box"
+    instruction.Text = "Enter the code"
     instruction.TextColor3 = Color3.fromRGB(200, 200, 220)
-    instruction.TextSize = 17
+    instruction.TextSize = 15
     instruction.Font = Enum.Font.Gotham
     instruction.TextXAlignment = Enum.TextXAlignment.Center
 
-    -- Input Box
+    -- Input Box - Optimized for Mobile
     local inputBox = Instance.new("TextBox")
     inputBox.Parent = frame
-    inputBox.Size = UDim2.new(0.7, 0, 0, 50)
-    inputBox.Position = UDim2.new(0.15, 0, 0, 295)
+    inputBox.Size = UDim2.new(0.8, 0, 0, 45)
+    inputBox.Position = UDim2.new(0.1, 0, 0, 235)
     inputBox.BackgroundColor3 = Color3.fromRGB(35, 38, 60)
     inputBox.Text = ""
     inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    inputBox.TextSize = 30
-    inputBox.PlaceholderText = "Enter code here..."
+    inputBox.TextSize = 28
+    inputBox.PlaceholderText = "Enter code..."
     inputBox.PlaceholderColor3 = Color3.fromRGB(100, 110, 150)
     inputBox.Font = Enum.Font.GothamBold
     inputBox.ClearTextOnFocus = false
     inputBox.TextXAlignment = Enum.TextXAlignment.Center
+    inputBox.AutomaticSize = Enum.AutomaticSize.None
 
     local inputCorner = Instance.new("UICorner")
     inputCorner.CornerRadius = UDim.new(0, 10)
@@ -308,12 +310,12 @@ local function createAdvancedVerificationUI()
         inputBox.Text = string.upper(inputBox.Text)
     end)
 
-    -- Buttons
+    -- Buttons Row - Smaller
     -- Confirm Button
     local confirmBtn = Instance.new("TextButton")
     confirmBtn.Parent = frame
-    confirmBtn.Size = UDim2.new(0.28, 0, 0, 45)
-    confirmBtn.Position = UDim2.new(0.1, 0, 0, 360)
+    confirmBtn.Size = UDim2.new(0.35, 0, 0, 40)
+    confirmBtn.Position = UDim2.new(0.075, 0, 0, 295)
     confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
     confirmBtn.Text = "✅ Confirm"
     confirmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -321,49 +323,49 @@ local function createAdvancedVerificationUI()
     confirmBtn.Font = Enum.Font.GothamBold
 
     local confirmCorner = Instance.new("UICorner")
-    confirmCorner.CornerRadius = UDim.new(0, 10)
+    confirmCorner.CornerRadius = UDim.new(0, 8)
     confirmCorner.Parent = confirmBtn
 
     -- Refresh Button
     local refreshBtn = Instance.new("TextButton")
     refreshBtn.Parent = frame
-    refreshBtn.Size = UDim2.new(0.28, 0, 0, 45)
-    refreshBtn.Position = UDim2.new(0.39, 0, 0, 360)
+    refreshBtn.Size = UDim2.new(0.25, 0, 0, 40)
+    refreshBtn.Position = UDim2.new(0.45, 0, 0, 295)
     refreshBtn.BackgroundColor3 = Color3.fromRGB(60, 65, 100)
-    refreshBtn.Text = "🔄 Refresh"
+    refreshBtn.Text = "🔄"
     refreshBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     refreshBtn.TextScaled = true
     refreshBtn.Font = Enum.Font.GothamBold
 
     local refreshCorner = Instance.new("UICorner")
-    refreshCorner.CornerRadius = UDim.new(0, 10)
+    refreshCorner.CornerRadius = UDim.new(0, 8)
     refreshCorner.Parent = refreshBtn
 
     -- Change Type Button
     local changeTypeBtn = Instance.new("TextButton")
     changeTypeBtn.Parent = frame
-    changeTypeBtn.Size = UDim2.new(0.28, 0, 0, 45)
-    changeTypeBtn.Position = UDim2.new(0.68, 0, 0, 360)
+    changeTypeBtn.Size = UDim2.new(0.25, 0, 0, 40)
+    changeTypeBtn.Position = UDim2.new(0.72, 0, 0, 295)
     changeTypeBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 150)
-    changeTypeBtn.Text = "🎲 Change Type"
+    changeTypeBtn.Text = "🎲"
     changeTypeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     changeTypeBtn.TextScaled = true
     changeTypeBtn.Font = Enum.Font.GothamBold
 
     local changeTypeCorner = Instance.new("UICorner")
-    changeTypeCorner.CornerRadius = UDim.new(0, 10)
+    changeTypeCorner.CornerRadius = UDim.new(0, 8)
     changeTypeCorner.Parent = changeTypeBtn
 
-    -- Strength Indicator
+    -- Strength Indicator - Smaller
     local strengthBar = Instance.new("Frame")
     strengthBar.Parent = frame
-    strengthBar.Size = UDim2.new(0.7, 0, 0, 8)
-    strengthBar.Position = UDim2.new(0.15, 0, 0, 420)
+    strengthBar.Size = UDim2.new(0.7, 0, 0, 6)
+    strengthBar.Position = UDim2.new(0.15, 0, 0, 350)
     strengthBar.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
     strengthBar.BorderSizePixel = 0
     
     local strengthBarCorner = Instance.new("UICorner")
-    strengthBarCorner.CornerRadius = UDim.new(0, 4)
+    strengthBarCorner.CornerRadius = UDim.new(0, 3)
     strengthBarCorner.Parent = strengthBar
 
     local strengthFill = Instance.new("Frame")
@@ -373,40 +375,52 @@ local function createAdvancedVerificationUI()
     strengthFill.BorderSizePixel = 0
     
     local strengthFillCorner = Instance.new("UICorner")
-    strengthFillCorner.CornerRadius = UDim.new(0, 4)
+    strengthFillCorner.CornerRadius = UDim.new(0, 3)
     strengthFillCorner.Parent = strengthFill
 
     local strengthLabel = Instance.new("TextLabel")
     strengthLabel.Parent = frame
-    strengthLabel.Size = UDim2.new(0.7, 0, 0, 20)
-    strengthLabel.Position = UDim2.new(0.15, 0, 0, 430)
+    strengthLabel.Size = UDim2.new(0.7, 0, 0, 18)
+    strengthLabel.Position = UDim2.new(0.15, 0, 0, 358)
     strengthLabel.BackgroundTransparency = 1
     strengthLabel.Text = "🔒 Strong"
     strengthLabel.TextColor3 = Color3.fromRGB(150, 200, 150)
-    strengthLabel.TextSize = 12
+    strengthLabel.TextSize = 11
     strengthLabel.Font = Enum.Font.Gotham
     strengthLabel.TextXAlignment = Enum.TextXAlignment.Center
 
-    return screenGui, frame, codeDisplay, codeTypeLabel, inputBox, confirmBtn, refreshBtn, changeTypeBtn, instruction, strengthFill, strengthLabel
+    -- Close Button (X) - Mobile friendly
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Parent = titleBar
+    closeBtn.Size = UDim2.new(0, 35, 0, 35)
+    closeBtn.Position = UDim2.new(1, -40, 0.5, -17.5)
+    closeBtn.BackgroundTransparency = 1
+    closeBtn.Text = "✕"
+    closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+    closeBtn.TextSize = 20
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.BorderSizePixel = 0
+
+    return screenGui, frame, codeDisplay, codeTypeLabel, inputBox, confirmBtn, refreshBtn, changeTypeBtn, instruction, strengthFill, strengthLabel, closeBtn, overlay
 end
 
 -- ==========================================
 -- ====== MAIN VERIFICATION SYSTEM ======
 -- ==========================================
 
-local function startAdvancedVerification()
-    local screenGui, frame, codeDisplay, codeTypeLabel, inputBox, confirmBtn, refreshBtn, changeTypeBtn, instruction, strengthFill, strengthLabel = createAdvancedVerificationUI()
+local function startMobileVerification()
+    local screenGui, frame, codeDisplay, codeTypeLabel, inputBox, confirmBtn, refreshBtn, changeTypeBtn, instruction, strengthFill, strengthLabel, closeBtn, overlay = createMobileVerificationUI()
     
     -- ===== Available Code Types =====
     local codeTypes = {
         {
-            name = "🔢 Numbers Only",
+            name = "🔢 Numbers",
             generator = function() return CodeGenerator.generateNumeric(6) end,
             strength = 0.4,
             strengthText = "🟡 Medium"
         },
         {
-            name = "🔤 Letters Only",
+            name = "🔤 Letters",
             generator = function() return CodeGenerator.generateRandomCode(6, {numbers = false, uppercase = true}) end,
             strength = 0.5,
             strengthText = "🟡 Medium"
@@ -418,7 +432,7 @@ local function startAdvancedVerification()
             strengthText = "🟢 Strong"
         },
         {
-            name = "🔐 Alphanumeric + Symbols",
+            name = "🔐 Secure",
             generator = function() return CodeGenerator.generateRandomCode(6, {numbers = true, uppercase = true, symbols = true}) end,
             strength = 1.0,
             strengthText = "🟣 Very Strong"
@@ -430,19 +444,19 @@ local function startAdvancedVerification()
             strengthText = "🟡 Medium"
         },
         {
-            name = "📦 Segmented (X7K-LM4)",
+            name = "📦 Segmented",
             generator = function() return CodeGenerator.generateSegmentedCode(2, 4) end,
             strength = 0.8,
             strengthText = "🟢 Strong"
         },
         {
-            name = "🔢 Hexadecimal",
+            name = "🔢 Hex",
             generator = function() return CodeGenerator.generateHex(6) end,
             strength = 0.6,
             strengthText = "🟢 Good"
         },
         {
-            name = "🎯 No Similar Chars",
+            name = "🎯 No Similar",
             generator = function() return CodeGenerator.generateRandomCode(6, {numbers = true, uppercase = true, excludeSimilar = true}) end,
             strength = 0.75,
             strengthText = "🟢 Strong"
@@ -454,7 +468,6 @@ local function startAdvancedVerification()
     local currentCode = ""
     local attempts = 0
     local maxAttempts = 4
-    local codeLength = 6
     
     -- ===== Update Strength Indicator =====
     local function updateStrength(strengthValue, text)
@@ -492,7 +505,7 @@ local function startAdvancedVerification()
         
         inputBox.Text = ""
         inputBox.BackgroundColor3 = Color3.fromRGB(35, 38, 60)
-        instruction.Text = "✍️ Enter the code shown in the box"
+        instruction.Text = "Enter the code"
         instruction.TextColor3 = Color3.fromRGB(200, 200, 220)
         
         print("🔑 New Code (" .. typeData.name .. "): " .. currentCode)
@@ -508,7 +521,7 @@ local function startAdvancedVerification()
         generateNewCode()
         attempts = 0
         
-        instruction.Text = "🔄 Code type changed! Enter the new code"
+        instruction.Text = "🔄 New code type!"
         instruction.TextColor3 = Color3.fromRGB(0, 200, 255)
         
         -- Button flash effect
@@ -522,12 +535,12 @@ local function startAdvancedVerification()
         local userInput = inputBox.Text
         
         if userInput == "" then
-            instruction.Text = "⚠️ Please enter the code first!"
+            instruction.Text = "⚠️ Enter the code!"
             instruction.TextColor3 = Color3.fromRGB(255, 200, 0)
             inputBox.BackgroundColor3 = Color3.fromRGB(200, 150, 0)
             task.wait(0.5)
             inputBox.BackgroundColor3 = Color3.fromRGB(35, 38, 60)
-            instruction.Text = "✍️ Enter the code shown in the box"
+            instruction.Text = "Enter the code"
             instruction.TextColor3 = Color3.fromRGB(200, 200, 220)
             return
         end
@@ -539,7 +552,7 @@ local function startAdvancedVerification()
         if cleanInput == cleanCode then
             -- ✅ Success
             inputBox.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-            instruction.Text = "✅ Verification successful! You are human ✅"
+            instruction.Text = "✅ Verified! You are human ✅"
             instruction.TextColor3 = Color3.fromRGB(0, 255, 0)
             confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
             
@@ -554,13 +567,13 @@ local function startAdvancedVerification()
             end
             
             game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "✅ Verification Successful",
-                Text = "You have been verified as human! 🎉",
-                Duration = 3,
+                Title = "✅ Verified",
+                Text = "You are human! 🎉",
+                Duration = 2,
                 Icon = "rbxassetid://8739636080"
             })
             
-            task.wait(0.8)
+            task.wait(0.6)
             screenGui:Destroy()
             
             -- Run your code here after verification
@@ -571,34 +584,34 @@ local function startAdvancedVerification()
             local remaining = maxAttempts - attempts
             
             inputBox.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-            instruction.Text = "❌ Incorrect code! " .. remaining .. " attempts remaining"
+            instruction.Text = "❌ Wrong! " .. remaining .. " left"
             instruction.TextColor3 = Color3.fromRGB(255, 0, 0)
             
             print("❌ Incorrect Code! Input: " .. userInput .. " | Correct: " .. currentCode)
             
             -- Shake animation
             local originalPos = frame.Position
-            for i = 1, 5 do
-                frame.Position = UDim2.new(0.5, -240 + (i % 2 == 0 and 12 or -12), 0.5, -225)
-                task.wait(0.04)
+            for i = 1, 4 do
+                frame.Position = UDim2.new(0.5, -175 + (i % 2 == 0 and 10 or -10), 0.5, -210)
+                task.wait(0.03)
             end
             frame.Position = originalPos
             
-            task.wait(0.6)
+            task.wait(0.5)
             inputBox.BackgroundColor3 = Color3.fromRGB(35, 38, 60)
             
             if attempts >= maxAttempts then
                 -- Max attempts reached
-                instruction.Text = "🔒 Max attempts reached! Changing code..."
+                instruction.Text = "🔒 Max attempts! New code..."
                 instruction.TextColor3 = Color3.fromRGB(255, 100, 100)
                 confirmBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
                 
-                task.wait(1.5)
+                task.wait(1.2)
                 changeCodeType()
                 attempts = 0
                 confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
             else
-                instruction.Text = "✍️ Enter the code shown in the box"
+                instruction.Text = "Enter the code"
                 instruction.TextColor3 = Color3.fromRGB(200, 200, 220)
             end
         end
@@ -608,11 +621,21 @@ local function startAdvancedVerification()
     confirmBtn.MouseButton1Click:Connect(verifyCode)
     refreshBtn.MouseButton1Click:Connect(generateNewCode)
     changeTypeBtn.MouseButton1Click:Connect(changeCodeType)
+    closeBtn.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
     
     -- ===== Enter Key =====
     inputBox.FocusLost:Connect(function(enterPressed)
         if enterPressed then
             verifyCode()
+        end
+    end)
+    
+    -- ===== Touch outside to dismiss keyboard =====
+    overlay.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            inputBox:ReleaseFocus()
         end
     end)
     
@@ -623,29 +646,32 @@ local function startAdvancedVerification()
     local dragging = false
     local dragStart = nil
     local startPos = nil
+    local touchOffset = nil
     
     titleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
+            touchOffset = Vector2.new(
+                frame.AbsolutePosition.X - input.Position.X,
+                frame.AbsolutePosition.Y - input.Position.Y
+            )
         end
     end)
     
     titleBar.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end)
     
     game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging and input.UserInputType == Enum.UserInputType.Touch then
             local delta = input.Position - dragStart
             frame.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
+                0.5, -175 + delta.X + (touchOffset and touchOffset.X or 0),
+                0.5, -210 + delta.Y + (touchOffset and touchOffset.Y or 0)
             )
         end
     end)
@@ -657,8 +683,8 @@ end
 -- ====== START SCRIPT ======
 -- ==========================================
 
--- Start the advanced verification
-startAdvancedVerification()
+-- Start the mobile verification
+startMobileVerification()
 
 -- ==========================================
 -- ====== ADDITIONAL PROTECTIONS ======
@@ -676,36 +702,11 @@ game:GetService("UserInputService").InputBegan:Connect(function(input, gameProce
         
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "⚠️ Not Allowed",
-            Text = "Please type the code manually!",
+            Text = "Type the code manually!",
             Duration = 2
         })
         return
     end
 end)
 
--- Detect rapid clicks (bot behavior)
-local clickCount = 0
-local clickTimer = 0
-
-game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        clickCount = clickCount + 1
-        
-        if clickCount > 30 then
-            print("⚠️ Suspicious Activity: Rapid clicks detected!")
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "⚠️ Warning",
-                Text = "Suspicious activity detected!",
-                Duration = 3
-            })
-            clickCount = 0
-        end
-        
-        task.wait(5)
-        clickCount = 0
-    end
-end)
-
-print("✅ Verification System Loaded Successfully!")
+print("✅ Mobile Verification System Loaded Successfully!")
