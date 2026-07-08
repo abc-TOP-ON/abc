@@ -1,271 +1,276 @@
--- =============================================
--- ✅ VERIFICATION SCRIPT (SIMPLE & WORKING)
--- =============================================
+-- ================================================
+-- نظام التحقق من أنك لست روبوت (Captcha)
+-- رمز عشوائي 5 أحرف إنجليزية وأرقام
+-- ================================================
 
+local player = game.Players.LocalPlayer
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- ====== SETTINGS ======
-local MAX_ATTEMPTS = 3
-local TIME_LIMIT = 60  -- 60 seconds
-local WORD_LENGTH = 5
-
--- ====== GENERATE RANDOM WORD ======
-local function GenerateWord()
+-- ===== دالة توليد رمز عشوائي 5 أحرف =====
+local function generateCode()
     local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    local word = ""
-    for i = 1, WORD_LENGTH do
-        local index = math.random(1, #chars)
-        word = word .. string.sub(chars, index, index)
+    local code = ""
+    for i = 1, 5 do  -- 5 أحرف فقط
+        local randIndex = math.random(1, #chars)
+        code = code .. string.sub(chars, randIndex, randIndex)
     end
-    return word
+    return code
 end
 
-local CORRECT_WORD = GenerateWord()
-local attempts = 0
-local timeLeft = TIME_LIMIT
+-- ===== إنشاء واجهة المستخدم =====
+local function createGUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "CaptchaGUI"
+    screenGui.Parent = game:GetService("CoreGui")
+    
+    -- الإطار الرئيسي
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 420, 0, 280)
+    frame.Position = UDim2.new(0.5, -210, 0.5, -140)
+    frame.BackgroundColor3 = Color3.new(0.08, 0.08, 0.12)
+    frame.BackgroundTransparency = 0.1
+    frame.BorderSizePixel = 0
+    frame.Parent = screenGui
+    
+    -- زوايا مستديرة
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = frame
+    
+    -- خط فاصل علوي (تصميم)
+    local topLine = Instance.new("Frame")
+    topLine.Size = UDim2.new(1, 0, 0, 4)
+    topLine.Position = UDim2.new(0, 0, 0, 0)
+    topLine.BackgroundColor3 = Color3.new(0.2, 0.6, 1)
+    topLine.BorderSizePixel = 0
+    topLine.Parent = frame
+    
+    -- عنوان
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.Position = UDim2.new(0, 0, 0, 15)
+    title.Text = "🤖 تحقق من أنك لست روبوتاً"
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.TextScaled = true
+    title.Font = Enum.Font.GothamBold
+    title.BackgroundTransparency = 1
+    title.Parent = frame
+    
+    -- مربع الرمز (يظهر الرمز المطلوب)
+    local codeBox = Instance.new("Frame")
+    codeBox.Size = UDim2.new(0.8, 0, 0, 60)
+    codeBox.Position = UDim2.new(0.1, 0, 0, 65)
+    codeBox.BackgroundColor3 = Color3.new(0.15, 0.15, 0.2)
+    codeBox.BorderSizePixel = 0
+    codeBox.Parent = frame
+    
+    local codeCorner = Instance.new("UICorner")
+    codeCorner.CornerRadius = UDim.new(0, 8)
+    codeCorner.Parent = codeBox
+    
+    -- النص داخل مربع الرمز
+    local codeLabel = Instance.new("TextLabel")
+    codeLabel.Size = UDim2.new(1, 0, 1, 0)
+    codeLabel.Position = UDim2.new(0, 0, 0, 0)
+    codeLabel.Text = "P2KSJ"  -- سيتم تحديثه لاحقاً
+    codeLabel.TextColor3 = Color3.new(0.3, 0.8, 1)
+    codeLabel.TextScaled = true
+    codeLabel.Font = Enum.Font.GothamBold
+    codeLabel.BackgroundTransparency = 1
+    codeLabel.Parent = codeBox
+    
+    -- تسمية "أدخل الرمز"
+    local enterLabel = Instance.new("TextLabel")
+    enterLabel.Size = UDim2.new(1, 0, 0, 25)
+    enterLabel.Position = UDim2.new(0, 0, 0, 135)
+    enterLabel.Text = "✏️ أدخل الرمز في الأسفل:"
+    enterLabel.TextColor3 = Color3.new(0.7, 0.7, 0.7)
+    enterLabel.TextScaled = true
+    enterLabel.Font = Enum.Font.Gotham
+    enterLabel.BackgroundTransparency = 1
+    enterLabel.Parent = frame
+    
+    -- مربع إدخال النص
+    local textBox = Instance.new("TextBox")
+    textBox.Size = UDim2.new(0.8, 0, 0, 45)
+    textBox.Position = UDim2.new(0.1, 0, 0, 165)
+    textBox.PlaceholderText = "أدخل الرمز هنا..."
+    textBox.Text = ""
+    textBox.TextColor3 = Color3.new(1, 1, 1)
+    textBox.BackgroundColor3 = Color3.new(0.2, 0.2, 0.25)
+    textBox.Font = Enum.Font.Gotham
+    textBox.TextScaled = true
+    textBox.Parent = frame
+    
+    local boxCorner = Instance.new("UICorner")
+    boxCorner.CornerRadius = UDim.new(0, 8)
+    boxCorner.Parent = textBox
+    
+    -- زر التحقق
+    local submitBtn = Instance.new("TextButton")
+    submitBtn.Size = UDim2.new(0.4, 0, 0, 45)
+    submitBtn.Position = UDim2.new(0.3, 0, 0, 220)
+    submitBtn.Text = "✅ تحقق"
+    submitBtn.TextColor3 = Color3.new(1, 1, 1)
+    submitBtn.BackgroundColor3 = Color3.new(0.2, 0.6, 1)
+    submitBtn.Font = Enum.Font.GothamBold
+    submitBtn.TextScaled = true
+    submitBtn.Parent = frame
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 8)
+    btnCorner.Parent = submitBtn
+    
+    -- رسالة النتيجة (تظهر نجاح أو فشل)
+    local resultLabel = Instance.new("TextLabel")
+    resultLabel.Size = UDim2.new(1, 0, 0, 30)
+    resultLabel.Position = UDim2.new(0, 0, 0, 245)
+    resultLabel.Text = ""
+    resultLabel.TextColor3 = Color3.new(1, 1, 1)
+    resultLabel.TextScaled = true
+    resultLabel.Font = Enum.Font.Gotham
+    resultLabel.BackgroundTransparency = 1
+    resultLabel.Parent = frame
+    
+    -- إرجاع العناصر
+    return {
+        ScreenGui = screenGui,
+        Frame = frame,
+        CodeLabel = codeLabel,
+        TextBox = textBox,
+        SubmitBtn = submitBtn,
+        ResultLabel = resultLabel
+    }
+end
+
+-- ===== إنشاء الواجهة =====
+local gui = createGUI()
+
+-- ===== توليد أول رمز =====
+local currentCode = generateCode()
+gui.CodeLabel.Text = currentCode  -- يعرض الرمز مثل P2KSJ
+
+-- ===== متغيرات =====
+local attempts = 3
 local verified = false
-local timerRunning = true
 
-print("🔑 CODE: " .. CORRECT_WORD)
+-- ===== تعطيل حركة اللاعب =====
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:FindFirstChild("Humanoid")
 
--- ====== CREATE GUI ======
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = PlayerGui
+if humanoid then
+    humanoid.WalkSpeed = 0
+    humanoid.JumpPower = 0
+    print("🔒 تم تعطيل الحركة")
+end
 
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 400, 0, 280)
-Frame.Position = UDim2.new(0.5, -200, 0.5, -140)
-Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 40)
-Frame.BackgroundTransparency = 0.1
-Frame.BorderSizePixel = 0
-Frame.Active = true
-Frame.Draggable = true
-Frame.Parent = ScreenGui
-
-local FrameCorner = Instance.new("UICorner")
-FrameCorner.CornerRadius = UDim.new(0, 12)
-FrameCorner.Parent = Frame
-
--- Title
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 45)
-Title.Position = UDim2.new(0, 0, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "🔐 VERIFICATION"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextScaled = true
-Title.Font = Enum.Font.GothamBold
-Title.Parent = Frame
-
--- Timer
-local TimerLabel = Instance.new("TextLabel")
-TimerLabel.Size = UDim2.new(0, 70, 0, 35)
-TimerLabel.Position = UDim2.new(1, -80, 0, 5)
-TimerLabel.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-TimerLabel.BackgroundTransparency = 0.2
-TimerLabel.Text = "⏱ " .. TIME_LIMIT
-TimerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TimerLabel.TextSize = 18
-TimerLabel.Font = Enum.Font.GothamBold
-TimerLabel.Parent = Frame
-
-local TimerCorner = Instance.new("UICorner")
-TimerCorner.CornerRadius = UDim.new(0, 8)
-TimerCorner.Parent = TimerLabel
-
--- Description
-local Desc = Instance.new("TextLabel")
-Desc.Size = UDim2.new(1, -20, 0, 30)
-Desc.Position = UDim2.new(0, 10, 0, 45)
-Desc.BackgroundTransparency = 1
-Desc.Text = "Type the code below:"
-Desc.TextColor3 = Color3.fromRGB(200, 200, 200)
-Desc.TextSize = 14
-Desc.Font = Enum.Font.Gotham
-Desc.Parent = Frame
-
--- Attempts
-local AttemptsLabel = Instance.new("TextLabel")
-AttemptsLabel.Size = UDim2.new(0, 150, 0, 25)
-AttemptsLabel.Position = UDim2.new(0, 10, 0, 75)
-AttemptsLabel.BackgroundTransparency = 1
-AttemptsLabel.Text = "Attempts: 0/" .. MAX_ATTEMPTS
-AttemptsLabel.TextColor3 = Color3.fromRGB(150, 200, 255)
-AttemptsLabel.TextSize = 13
-AttemptsLabel.Font = Enum.Font.Gotham
-AttemptsLabel.TextXAlignment = Enum.TextXAlignment.Left
-AttemptsLabel.Parent = Frame
-
--- Word Display
-local WordDisplay = Instance.new("TextLabel")
-WordDisplay.Size = UDim2.new(1, -40, 0, 55)
-WordDisplay.Position = UDim2.new(0, 20, 0, 105)
-WordDisplay.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
-WordDisplay.BackgroundTransparency = 0.2
-WordDisplay.Text = CORRECT_WORD
-WordDisplay.TextColor3 = Color3.fromRGB(0, 255, 200)
-WordDisplay.TextScaled = true
-WordDisplay.Font = Enum.Font.GothamBold
-WordDisplay.Parent = Frame
-
-local WordCorner = Instance.new("UICorner")
-WordCorner.CornerRadius = UDim.new(0, 10)
-WordCorner.Parent = WordDisplay
-
--- Input Box
-local TextBox = Instance.new("TextBox")
-TextBox.Size = UDim2.new(1, -40, 0, 45)
-TextBox.Position = UDim2.new(0, 20, 0, 170)
-TextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 70)
-TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-TextBox.Text = ""
-TextBox.PlaceholderText = "Type here..."
-TextBox.TextSize = 22
-TextBox.Font = Enum.Font.GothamBold
-TextBox.ClearTextOnFocus = false
-TextBox.Parent = Frame
-
-local TextBoxCorner = Instance.new("UICorner")
-TextBoxCorner.CornerRadius = UDim.new(0, 10)
-TextBoxCorner.Parent = TextBox
-
--- ✅ AUTO-REMOVE SPACES (while typing)
-TextBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local text = TextBox.Text
-    local clean = string.gsub(text, " ", "")
-    if text ~= clean then
-        TextBox.Text = clean
-        TextBox.CursorPosition = #clean + 1
-    end
-end)
-
--- Confirm Button
-local ConfirmButton = Instance.new("TextButton")
-ConfirmButton.Size = UDim2.new(0.8, 0, 0, 45)
-ConfirmButton.Position = UDim2.new(0.1, 0, 0, 228)
-ConfirmButton.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
-ConfirmButton.Text = "✅ CONFIRM"
-ConfirmButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ConfirmButton.TextSize = 20
-ConfirmButton.Font = Enum.Font.GothamBold
-ConfirmButton.Parent = Frame
-
-local ButtonCorner = Instance.new("UICorner")
-ButtonCorner.CornerRadius = UDim.new(0, 10)
-ButtonCorner.Parent = ConfirmButton
-
--- Close Button
-local CloseButton = Instance.new("TextButton")
-CloseButton.Size = UDim2.new(0, 25, 0, 25)
-CloseButton.Position = UDim2.new(1, -30, 0, 5)
-CloseButton.BackgroundTransparency = 1
-CloseButton.Text = "✕"
-CloseButton.TextColor3 = Color3.fromRGB(255, 100, 100)
-CloseButton.TextSize = 16
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.Parent = Frame
-
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
-
--- ====== TIMER ======
-local function UpdateTimer()
-    if timeLeft <= 0 then
-        timerRunning = false
-        Title.Text = "⏰ TIME'S UP!"
-        Title.TextColor3 = Color3.fromRGB(255, 0, 0)
-        ConfirmButton.Text = "Kicking..."
-        ConfirmButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-        TextBox.Active = false
-        ConfirmButton.Active = false
-        wait(1.5)
-        LocalPlayer:Kick("⏰ Time's up!")
-        return
-    end
-    
-    TimerLabel.Text = "⏱ " .. timeLeft
-    
-    if timeLeft <= 5 then
-        TimerLabel.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        TimerLabel.BackgroundTransparency = 0.1
+-- ===== دالة إعادة تفعيل الحركة =====
+local function enableMovement()
+    if humanoid then
+        humanoid.WalkSpeed = 16
+        humanoid.JumpPower = 50
+        print("🔓 تم تفعيل الحركة")
     end
 end
 
-coroutine.wrap(function()
-    while timerRunning and timeLeft > 0 and not verified do
-        wait(1)
-        timeLeft = timeLeft - 1
-        UpdateTimer()
-    end
-end)()
-
--- ====== VERIFICATION ======
-ConfirmButton.MouseButton1Click:Connect(function()
-    local input = TextBox.Text
-    local cleaned = string.gsub(input, " ", "")  -- Remove spaces
+-- ===== دالة التحقق =====
+local function verify()
+    local userInput = gui.TextBox.Text
+    userInput = string.upper(userInput)  -- تحويل إلى حروف كبيرة
     
-    print("📝 You typed: '" .. input .. "'")
-    print("🧹 Cleaned: '" .. cleaned .. "'")
-    print("🔑 Expected: '" .. CORRECT_WORD .. "'")
-    
-    if cleaned == "" then
-        Title.Text = "⚠️ Type something!"
-        Title.TextColor3 = Color3.fromRGB(255, 200, 0)
-        return
-    end
-    
-    if cleaned == CORRECT_WORD then
-        -- ✅ CORRECT
+    if userInput == currentCode then
+        -- ✅ نجاح
         verified = true
-        timerRunning = false
-        Title.Text = "✅ VERIFIED!"
-        Title.TextColor3 = Color3.fromRGB(0, 255, 100)
-        ConfirmButton.Text = "✅ DONE"
-        ConfirmButton.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-        TextBox.Active = false
-        ConfirmButton.Active = false
-        wait(1.5)
-        ScreenGui:Destroy()
-    else
-        -- ❌ WRONG
-        attempts = attempts + 1
-        AttemptsLabel.Text = "Attempts: " .. attempts .. "/" .. MAX_ATTEMPTS
+        gui.ResultLabel.Text = "✅ تم التحقق بنجاح! مرحباً بك!"
+        gui.ResultLabel.TextColor3 = Color3.new(0, 1, 0)
         
-        if attempts >= MAX_ATTEMPTS then
-            Title.Text = "❌ FAILED!"
-            Title.TextColor3 = Color3.fromRGB(255, 0, 0)
-            ConfirmButton.Text = "Kicking..."
-            ConfirmButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-            TextBox.Active = false
-            wait(1.5)
-            LocalPlayer:Kick("❌ Too many failed attempts!")
+        enableMovement()
+        
+        task.wait(1)
+        gui.ScreenGui:Destroy()
+        
+        print("✅ تم التحقق من أنك لست روبوتاً!")
+        print("🎮 الرمز الصحيح كان: " .. currentCode)
+        
+        -- هنا تقدر تشغل السكربتات الثانية بعد التحقق
+        
+    else
+        -- ❌ فشل
+        attempts = attempts - 1
+        
+        if attempts > 0 then
+            gui.ResultLabel.Text = "❌ رمز خاطئ! متبقي " .. attempts .. " محاولات"
+            gui.ResultLabel.TextColor3 = Color3.new(1, 0.5, 0)
+            
+            -- تغيير الرمز تلقائياً
+            currentCode = generateCode()
+            gui.CodeLabel.Text = currentCode
+            gui.TextBox.Text = ""
+            
+            print("🔄 تم تغيير الرمز إلى: " .. currentCode)
+            
         else
-            Title.Text = "❌ Wrong! " .. (MAX_ATTEMPTS - attempts) .. " left"
-            Title.TextColor3 = Color3.fromRGB(255, 200, 0)
-            TextBox.Text = ""
-            TextBox.PlaceholderText = "Try again..."
+            -- 🔥 انتهت المحاولات - طرد
+            gui.ResultLabel.Text = "⛔ انتهت المحاولات! يتم طردك..."
+            gui.ResultLabel.TextColor3 = Color3.new(1, 0, 0)
+            gui.SubmitBtn.Visible = false
+            gui.TextBox.Visible = false
             
-            -- Shake
-            TextBox.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-            wait(0.3)
-            TextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 70)
+            task.wait(2)
+            print("❌ تم طرد اللاعب بسبب فشل التحقق")
+            player:Kick("❌ فشل التحقق من أنك لست روبوتاً!")
+        end
+    end
+end
+
+-- ===== أحداث الأزرار =====
+gui.SubmitBtn.MouseButton1Click:Connect(verify)
+
+-- الضغط على Enter
+gui.TextBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        verify()
+    end
+end)
+
+-- ===== اختياري: تحديث الرمز كل 10 ثواني =====
+task.spawn(function()
+    while not verified do
+        task.wait(10)
+        if not verified then
+            currentCode = generateCode()
+            gui.CodeLabel.Text = currentCode
+            print("🔄 تم تحديث الرمز إلى: " .. currentCode)
             
-            -- New word
-            CORRECT_WORD = GenerateWord()
-            WordDisplay.Text = CORRECT_WORD
-            print("🔄 New code: " .. CORRECT_WORD)
+            -- إظهار إشعار بالتحديث
+            gui.ResultLabel.Text = "🔄 تم تغيير الرمز!"
+            gui.ResultLabel.TextColor3 = Color3.new(1, 0.8, 0)
+            task.wait(1)
+            gui.ResultLabel.Text = ""
         end
     end
 end)
 
--- Enter key
-TextBox.FocusLost:Connect(function(enter)
-    if enter then
-        ConfirmButton.MouseButton1Click:Fire()
+-- ===== مؤقت 60 ثانية =====
+local timeLeft = 60
+task.spawn(function()
+    while timeLeft > 0 and not verified do
+        task.wait(1)
+        timeLeft = timeLeft - 1
+        
+        if timeLeft <= 10 then
+            gui.ResultLabel.Text = "⏰ متبقي " .. timeLeft .. " ثانية!"
+            gui.ResultLabel.TextColor3 = Color3.new(1, 0.8, 0)
+        end
+        
+        if timeLeft <= 0 then
+            print("⏰ انتهى الوقت!")
+            player:Kick("⏰ انتهى وقت التحقق!")
+        end
     end
 end)
 
-print("✅ Script loaded! Code: " .. CORRECT_WORD)
+-- ===== إشعار بدء التشغيل =====
+print("🔐 نظام التحقق (Captcha) يعمل!")
+print("📝 الرمز الحالي: " .. currentCode)
+print("⏱️ لديك 60 ثانية و 3 محاولات")
