@@ -1,5 +1,5 @@
 -- ================================================
--- Verification System - English + Large UI
+-- Verification System - All Text in English
 -- ================================================
 
 local player = game.Players.LocalPlayer
@@ -15,15 +15,15 @@ local function generateCode()
     return code
 end
 
--- Create large GUI
+-- Create GUI
 local function createGUI()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "CaptchaGUI"
     screenGui.Parent = game:GetService("CoreGui")
     
-    -- Main Frame (LARGER)
+    -- Main Frame
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 500, 0, 300)  -- Bigger!
+    frame.Size = UDim2.new(0, 500, 0, 300)
     frame.Position = UDim2.new(0.5, -250, 0.5, -150)
     frame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.15)
     frame.BackgroundTransparency = 0.1
@@ -57,7 +57,7 @@ local function createGUI()
     subtitle.BackgroundTransparency = 1
     subtitle.Parent = frame
     
-    -- Code display box (LARGER)
+    -- Code display box
     local codeLabel = Instance.new("TextLabel")
     codeLabel.Size = UDim2.new(0.7, 0, 0, 60)
     codeLabel.Position = UDim2.new(0.15, 0, 0, 90)
@@ -83,7 +83,7 @@ local function createGUI()
     inputLabel.BackgroundTransparency = 1
     inputLabel.Parent = frame
     
-    -- TextBox (LARGER)
+    -- TextBox
     local textBox = Instance.new("TextBox")
     textBox.Size = UDim2.new(0.7, 0, 0, 40)
     textBox.Position = UDim2.new(0.15, 0, 0, 185)
@@ -99,7 +99,7 @@ local function createGUI()
     boxCorner.CornerRadius = UDim.new(0, 8)
     boxCorner.Parent = textBox
     
-    -- Submit Button (LARGER)
+    -- Submit Button
     local submitBtn = Instance.new("TextButton")
     submitBtn.Size = UDim2.new(0.35, 0, 0, 40)
     submitBtn.Position = UDim2.new(0.325, 0, 0, 235)
@@ -177,7 +177,7 @@ local function verify()
         
         task.wait(1.5)
         print("❌ Wrong code! Kicking player: " .. player.Name)
-        player:Kick("❌ Incorrect verification code!")
+        player:Kick("Incorrect verification code!")
     end
 end
 
@@ -206,7 +206,7 @@ task.spawn(function()
             gui.ResultLabel.Text = "⏰ Time is up!"
             task.wait(1)
             print("⏰ Time expired! Kicking player: " .. player.Name)
-            player:Kick("⏰ Verification time expired!")
+            player:Kick("Verification time expired!")
         end
     end
 end)
